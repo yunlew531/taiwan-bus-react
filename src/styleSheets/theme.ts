@@ -1,4 +1,4 @@
-export const theme = {
+export default {
   colors: {
     primary: '#355F8B',
     secondary: '#D08181',
@@ -24,5 +24,3 @@ export const theme = {
     fs_6: '12px',
   },
 };
-
-export type Theme = typeof theme;
