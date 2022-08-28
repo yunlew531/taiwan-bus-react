@@ -19,8 +19,7 @@ export default {
     fs_1: '20px',
     fs_2: '18px',
     fs_3: '16px',
-    fs_4: '15px',
-    fs_5: '14px',
-    fs_6: '12px',
+    fs_4: '14px',
+    fs_5: '12px',
   },
 };
