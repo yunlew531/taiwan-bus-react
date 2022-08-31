@@ -1,7 +1,8 @@
 import React from 'react';
 import styled from '@emotion/styled';
-import { ThemeProps } from 'react-app-env';
+import type { ThemeProps } from 'react-app-env';
 import theme from 'styleSheets/theme';
+import { Link } from 'react-router-dom';
 
 const CityListContainer = styled.ul`
   max-width: 1440px;
@@ -38,7 +39,7 @@ const CityItem = styled.li<ThemeProps>`
     margin-bottom: 6px;
   }
   .engTitle {
-    font-size: ${({ theme: { fontSizes: { fs_5 } } }) => fs_5};
+    font-size: ${({ theme: { fontSizes: { fs_4 } } }) => fs_4};
     font-weight: 300;
   }
   &:hover {
@@ -89,18 +90,37 @@ const CityList: React.FC = () => {
     },
   ];
 
+  const handleCityUrl = (city: string) => {
+    let result: string;
+
+    switch (city) {
+      case 'Taipei / New Taipei':
+        result = 'Taipei&NewTaipei';
+        break;
+      case 'Other City':
+        result = 'Other_City';
+        break;
+      default:
+        result = city;
+    }
+
+    return `/bus/${result}`;
+  };
+
   return (
     <CityListContainer>
       {cities.map((city) => (
-        <CityItem key={city.title} color={city.color}>
-          <span className="material-icons-outlined bus-icon">
-            directions_bus_filled
-          </span>
-          <h3>
-            <span className="chineseTitle">{city.title}</span>
-            <span className="engTitle">{city.engTitle}</span>
-          </h3>
-        </CityItem>
+        <Link key={city.title} to={handleCityUrl(city.engTitle)}>
+          <CityItem color={city.color}>
+            <span className="material-icons-outlined bus-icon">
+              directions_bus_filled
+            </span>
+            <h3>
+              <span className="chineseTitle">{city.title}</span>
+              <span className="engTitle">{city.engTitle}</span>
+            </h3>
+          </CityItem>
+        </Link>
       ))}
     </CityListContainer>
   );

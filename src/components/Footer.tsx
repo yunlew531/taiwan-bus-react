@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from '@emotion/styled';
-import { ThemeProps } from 'react-app-env';
+import type { ThemeProps } from 'react-app-env';
 
 const Wrap = styled.footer<ThemeProps>`
   display: flex;
@@ -15,7 +15,7 @@ const Wrap = styled.footer<ThemeProps>`
 
 const Footer: React.FC = () => (
   <Wrap>
-    <p>Copyright © 2021 台灣公車 e 點通 All rights reserved.</p>
+    <p>Copyright © 2022 台灣公車 e 點通 All rights reserved.</p>
   </Wrap>
 );
 

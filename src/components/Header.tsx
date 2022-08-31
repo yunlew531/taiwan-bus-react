@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import styled from '@emotion/styled';
-import { ThemeProps } from 'react-app-env';
+import type { ThemeProps } from 'react-app-env';
 import { Link } from 'react-router-dom';
 
 const Wrap = styled.div<ThemeProps>`
   height: 78px;
   background-color: ${({ theme: { colors: { white } } }) => white};
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.08);
 `;
 
 const HeaderContainer = styled.header`
@@ -18,6 +19,7 @@ const HeaderContainer = styled.header`
 `;
 
 const IconGroup = styled.div<ThemeProps>`
+  cursor: pointer;
   display: flex;
   align-items: center;
   img {
@@ -34,7 +36,7 @@ const IconGroup = styled.div<ThemeProps>`
     margin-bottom: 2px;
   }
   .engTitle {
-    font-size: ${({ theme: { fontSizes: { fs_5 } } }) => fs_5};
+    font-size: ${({ theme: { fontSizes: { fs_4 } } }) => fs_4};
     font-weight: 300;
   }
 `;
@@ -88,15 +90,17 @@ const Header: React.FC = () => {
   return (
     <Wrap>
       <HeaderContainer>
-        <IconGroup>
-          <img src={`${process.env.PUBLIC_URL}/images/logo-style2.png`} alt="taiwan bus logo" />
-          <div>
-            <h1>
-              <span className="chineseTitle">台灣公車 e 點通</span>
-              <span className="engTitle">Taiwan Bus+</span>
-            </h1>
-          </div>
-        </IconGroup>
+        <Link to="/">
+          <IconGroup>
+            <img src={`${process.env.PUBLIC_URL}/images/logo-style2.png`} alt="taiwan bus logo" />
+            <div>
+              <h1>
+                <span className="chineseTitle">台灣公車 e 點通</span>
+                <span className="engTitle">Taiwan Bus+</span>
+              </h1>
+            </div>
+          </IconGroup>
+        </Link>
         <NavList>
           <Link to="/">附近站牌</Link>
           <Link to="/">站點查詢</Link>
