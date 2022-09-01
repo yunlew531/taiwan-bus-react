@@ -11,6 +11,7 @@ const CityListContainer = styled.ul`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   margin: 0 auto;
 `;
 
