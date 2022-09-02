@@ -4,6 +4,7 @@ import Home from 'pages/home';
 import NotFound from 'pages/notFound';
 import Bus from 'pages/bus';
 import Station from 'pages/station';
+import NearStation from 'pages/near-station';
 
 const routes: RouteObject[] = [
   {
@@ -17,6 +18,10 @@ const routes: RouteObject[] = [
   {
     path: '/station',
     element: <Station />,
+  },
+  {
+    path: '/near-station',
+    element: <NearStation />,
   },
   {
     path: '*',

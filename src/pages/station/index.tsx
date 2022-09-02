@@ -35,18 +35,19 @@ const StationSearchPanel = styled.div<ThemeProps & { show: boolean }>`
   padding: 20px;
 `;
 
-const StationList = styled.ul<ThemeProps>`
-  display: none;
+const StationList = styled.ul<ThemeProps & { show: boolean }>`
+  display: ${({ show }) => (show ? 'block' : 'none')};
   position: absolute;
   bottom: 0;
   width: 100%;
   max-height: 220px;
   background: ${({ theme: { colors: { white } } }) => white};
+  border: 1px solid ${({ theme: { colors: { gray_300 } } }) => gray_300};
   box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.12);
   border-radius: 5px;
   transform: translateY(100%);
   z-index: 1;
-  overflow-y: scroll;
+  overflow-y: auto;
 `;
 
 const SearchGroup = styled.div`
@@ -125,7 +126,7 @@ const Station: React.FC = () => {
           <StationSearchPanel show>
             <SearchGroup>
               <Search placeholder="請輸入站名" />
-              <StationList>
+              <StationList show={false}>
                 {Array.from(Array(10).keys()).map(
                   (item) => <StationItem key={item}>台中車站（成功路口）</StationItem>,
                 )}

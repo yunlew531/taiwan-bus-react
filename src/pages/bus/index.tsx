@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import React, { useState } from 'react';
+import React from 'react';
 import type { ThemeProps } from 'react-app-env';
 import { useParams } from 'react-router-dom';
 import Breadcrumb from 'components/Breadcrumb';

@@ -4,7 +4,7 @@ import type { ThemeProps } from 'react-app-env';
 
 const BusListStyle = styled.ul<{ height: string | undefined }>`
   height: ${({ height }) => (height ? `${height}px` : 'auto')};
-  overflow-y: scroll;
+  overflow-y: auto;
   padding: 0 15px;
   margin-top: 36px;
 `;
@@ -19,13 +19,13 @@ const BusItem = styled.li<ThemeProps>`
   &:hover {
     filter: brightness(0.7);
   }
-  .routeNum {
+  .route-num {
     font-size: ${({ theme: { fontSizes: { fs_1 } } }) => fs_1};
     font-weight: 700;
     margin-bottom: 5px;
     text-align: left;
   }
-  .routeName {
+  .route-name {
     color: ${({ theme: { colors: { gray_600 } } }) => gray_600};
     font-size: ${({ theme: { fontSizes: { fs_4 } } }) => fs_4};
     text-align: left;
@@ -56,33 +56,33 @@ interface IRoute {
 interface IBusList {
   city?: string | null;
   routes: Array<IRoute>;
-  height?: string;
+  height: string;
 }
 
 // eslint-disable-next-line arrow-body-style
-const BusList: React.FC<IBusList> = ({ city, routes, height }) => {
-  return (
-    <BusListStyle height={height}>
-      {routes.map((route) => (
-        <BusItem key={route.routeNum}>
-          <div>
-            <p className="routeNum">{route.routeNum}</p>
-            <p className="routeName">{route.route}</p>
-          </div>
-          <div>
-            <span className="material-icons-outlined favorite">favorite_border</span>
-            {/* <span className="material-icons-outlined favorite">favorite</span> */}
-            {city && <p className="cityName">{city}</p>}
-          </div>
-        </BusItem>
-      ))}
-    </BusListStyle>
-  );
-};
+const BusList: React.FC<IBusList> = ({
+  city, routes, height,
+}) => (
+  <BusListStyle height={height}>
+    {routes.map((route) => (
+      <BusItem key={route.routeNum}>
+        <div>
+          <p className="route-num">{route.routeNum}</p>
+          <p className="route-name">{route.route}</p>
+        </div>
+        <div>
+          <span className="material-icons-outlined favorite">favorite_border</span>
+          {/* <span className="material-icons-outlined favorite">favorite</span> */}
+          {city && <p className="cityName">{city}</p>}
+          {/* { TODO: type city for each station } */}
+        </div>
+      </BusItem>
+    ))}
+  </BusListStyle>
+);
 
 BusList.defaultProps = {
   city: null,
-  height: '',
 };
 
 export default BusList;

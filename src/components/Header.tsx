@@ -102,7 +102,7 @@ const Header: React.FC = () => {
           </IconGroup>
         </Link>
         <NavList>
-          <Link to="/">附近站牌</Link>
+          <Link to="/near-station">附近站牌</Link>
           <Link to="/station">站點查詢</Link>
           <Link to="/">我的收藏</Link>
         </NavList>
