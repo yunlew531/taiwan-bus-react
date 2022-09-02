@@ -120,7 +120,7 @@ const routes = [
 const Station: React.FC = () => {
   return (
     <>
-      <Breadcrumb title="站點查詢" />
+      <Breadcrumb title="站點查詢" copy timeTable />
       <MainContainer>
         <StationsContainer>
           <StationSearchPanel show>

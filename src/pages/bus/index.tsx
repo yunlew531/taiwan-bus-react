@@ -173,7 +173,7 @@ const Bus: React.FC = () => {
 
   return (
     <>
-      <Breadcrumb title={chineseCity} />
+      <Breadcrumb title={chineseCity} copy timeTable />
       <MainContainer>
         <RoutesContainer>
           <BusSearchPanel show>

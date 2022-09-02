@@ -63,10 +63,12 @@ display: inline-block;
 
 interface BreadcrumbProps {
   title: string;
+  copy?: boolean;
+  timeTable?: boolean;
 }
 
 // eslint-disable-next-line arrow-body-style
-const Breadcrumb: React.FC<BreadcrumbProps> = ({ title }) => {
+const Breadcrumb: React.FC<BreadcrumbProps> = ({ title, copy, timeTable }) => {
   return (
     <BreadcrumbStyle>
       <div>
@@ -75,17 +77,26 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ title }) => {
         <span>{title}</span>
       </div>
       <TimeTableGroup>
-        <CopyLink>
-          <span className="material-icons-outlined">insert_link</span>
-          <p>複製連結</p>
-        </CopyLink>
-        <TimeTable>
-          <span className="material-icons-outlined">schedule</span>
-          <p>時刻表</p>
-        </TimeTable>
+        {copy && (
+          <CopyLink>
+            <span className="material-icons-outlined">insert_link</span>
+            <p>複製連結</p>
+          </CopyLink>
+        )}
+        {timeTable && (
+          <TimeTable>
+            <span className="material-icons-outlined">schedule</span>
+            <p>時刻表</p>
+          </TimeTable>
+        )}
       </TimeTableGroup>
     </BreadcrumbStyle>
   );
+};
+
+Breadcrumb.defaultProps = {
+  copy: false,
+  timeTable: false,
 };
 
 export default Breadcrumb;

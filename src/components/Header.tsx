@@ -104,7 +104,7 @@ const Header: React.FC = () => {
         <NavList>
           <Link to="/near-station">附近站牌</Link>
           <Link to="/station">站點查詢</Link>
-          <Link to="/">我的收藏</Link>
+          <Link to="/favorite">我的收藏</Link>
         </NavList>
         <LanguageGroup>
           <img src={`${process.env.PUBLIC_URL}/images/iconoir_language.png`} alt="language icon" />

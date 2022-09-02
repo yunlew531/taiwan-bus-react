@@ -172,7 +172,7 @@ const FavoriteBtn = styled.button<ThemeProps>`
 const NearStation: React.FC = () => {
   return (
     <>
-      <Breadcrumb title="附近站牌" />
+      <Breadcrumb title="附近站牌" copy timeTable />
       <MainContainer>
         <StationsContainer>
           <Offcanvas show>
