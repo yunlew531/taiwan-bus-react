@@ -1,4 +1,4 @@
-export default {
+const theme = {
   colors: {
     primary: '#355F8B',
     secondary: '#D08181',
@@ -26,3 +26,5 @@ export default {
     fs_4: '14px',
   },
 };
+
+export default theme;

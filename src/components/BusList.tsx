@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from '@emotion/styled';
-import type { ThemeProps } from 'react-app-env';
+import type { IBusRoute, ThemeProps } from 'react-app-env';
 
 const BusListStyle = styled.ul<{ height: string | undefined }>`
   height: ${({ height }) => (height ? `${height}px` : 'auto')};
@@ -48,33 +48,27 @@ const BusItem = styled.li<ThemeProps>`
   }
 `;
 
-interface IRoute {
-  routeNum: number;
-  route: string;
-}
-
 interface IBusList {
   city?: string | null;
-  routes: Array<IRoute>;
+  routes: Array<IBusRoute>;
   height: string;
 }
 
-// eslint-disable-next-line arrow-body-style
 const BusList: React.FC<IBusList> = ({
   city, routes, height,
 }) => (
   <BusListStyle height={height}>
     {routes.map((route) => (
-      <BusItem key={route.routeNum}>
+      <BusItem key={route.RouteUID}>
         <div>
-          <p className="route-num">{route.routeNum}</p>
-          <p className="route-name">{route.route}</p>
+          <p className="route-num">{route.RouteID}</p>
+          <p className="route-name">{route.DepartureStopNameZh} - {route.DestinationStopNameZh}</p>
         </div>
         <div>
           <span className="material-icons-outlined favorite">favorite_border</span>
           {/* <span className="material-icons-outlined favorite">favorite</span> */}
           {city && <p className="cityName">{city}</p>}
-          {/* { TODO: type city for each station } */}
+          {route.City && <p className="cityName">{route.City}</p>}
         </div>
       </BusItem>
     ))}

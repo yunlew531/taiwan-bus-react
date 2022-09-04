@@ -154,7 +154,6 @@ const BusStationItem = styled.li<ThemeProps>`
   }
 `;
 
-// eslint-disable-next-line arrow-body-style
 const Favorite: React.FC = () => {
   return (
     <>

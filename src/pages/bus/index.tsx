@@ -1,11 +1,14 @@
 import styled from '@emotion/styled';
-import React from 'react';
+import React, { useEffect } from 'react';
 import type { ThemeProps } from 'react-app-env';
 import { useParams } from 'react-router-dom';
 import Breadcrumb from 'components/Breadcrumb';
 import BusList from 'components/BusList';
 import Search from 'components/Search';
 import RoutesOffcanvas from 'components/RoutesOffcanvas';
+import { useGetRoutesByCityQuery } from 'services/busRoutes';
+import { useAppDispatch } from 'hooks';
+import { setBusRoutes } from 'slices/busRoutesSlice';
 
 const MainContainer = styled.div`
   position: absolute;
@@ -85,6 +88,8 @@ const DedicatedBtn = styled(NumberBtn)<ThemeProps>`
 
 const Bus: React.FC = () => {
   const { city: cityParams } = useParams();
+  const dispatch = useAppDispatch();
+  const { data: busRoutes = [] } = useGetRoutesByCityQuery(cityParams || '');
 
   const translateCity = (city = '') => {
     let result: string;
@@ -117,59 +122,9 @@ const Bus: React.FC = () => {
 
   const chineseCity = translateCity(cityParams);
 
-  // TODO: test data
-  const routes = [
-    {
-      routeNum: 303,
-      route: '台中國際機場 - 台中公園',
-    },
-    {
-      routeNum: 301,
-      route: '靜宜大學 - 新民高中',
-    },
-    {
-      routeNum: 304,
-      route: '靜宜大學 - 新民高中',
-    },
-    {
-      routeNum: 30851,
-      route: '靜宜大學 - 新民高中',
-    },
-
-    {
-      routeNum: 35,
-      route: '靜宜大學 - 新民高中',
-    },
-    {
-      routeNum: 321,
-      route: '靜宜大學 - 新民高中',
-    },
-    {
-      routeNum: 3241,
-      route: '靜宜大學 - 新民高中',
-    },
-    {
-      routeNum: 32152,
-      route: '靜宜大學 - 新民高中',
-    },
-    {
-      routeNum: 3271,
-      route: '靜宜大學 - 新民高中',
-    },
-    {
-      routeNum: 322571,
-      route: '靜宜大學 - 新民高中',
-    },
-    {
-      routeNum: 56468,
-      route: '靜宜大學 - 新民高中',
-    },
-
-    {
-      routeNum: 65461,
-      route: '靜宜大學 - 新民高中',
-    },
-  ];
+  useEffect(() => {
+    dispatch(setBusRoutes(busRoutes));
+  }, [busRoutes]);
 
   return (
     <>
@@ -179,7 +134,7 @@ const Bus: React.FC = () => {
           <BusSearchPanel show>
             <BusListPanel>
               <Search placeholder="輸入公車路線 / 起迄方向名或關鍵字" />
-              <BusList city={chineseCity} routes={routes} height="420" />
+              <BusList city={chineseCity} routes={busRoutes} height="420" />
             </BusListPanel>
             <NumberBoard>
               <NumberBtnsGroup>

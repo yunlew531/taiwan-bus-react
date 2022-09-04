@@ -38,7 +38,6 @@ interface ISearch {
   placeholder?: string;
 }
 
-// eslint-disable-next-line arrow-body-style
 const Search: React.FC<ISearch> = ({ placeholder }) => {
   return (
     <SearchRouteInputGroup>

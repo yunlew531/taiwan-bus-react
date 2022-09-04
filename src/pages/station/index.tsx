@@ -62,61 +62,60 @@ const StationItem = styled.li<ThemeProps>`
   }
 `;
 
-// TODO: test data
-const routes = [
-  {
-    routeNum: 303,
-    route: '台中國際機場 - 台中公園',
-  },
-  {
-    routeNum: 301,
-    route: '靜宜大學 - 新民高中',
-  },
-  {
-    routeNum: 304,
-    route: '靜宜大學 - 新民高中',
-  },
-  {
-    routeNum: 30851,
-    route: '靜宜大學 - 新民高中',
-  },
+// // TODO: test data
+// const routes = [
+//   {
+//     routeNum: 303,
+//     route: '台中國際機場 - 台中公園',
+//   },
+//   {
+//     routeNum: 301,
+//     route: '靜宜大學 - 新民高中',
+//   },
+//   {
+//     routeNum: 304,
+//     route: '靜宜大學 - 新民高中',
+//   },
+//   {
+//     routeNum: 30851,
+//     route: '靜宜大學 - 新民高中',
+//   },
 
-  {
-    routeNum: 35,
-    route: '靜宜大學 - 新民高中',
-  },
-  {
-    routeNum: 321,
-    route: '靜宜大學 - 新民高中',
-  },
-  {
-    routeNum: 3241,
-    route: '靜宜大學 - 新民高中',
-  },
-  {
-    routeNum: 32152,
-    route: '靜宜大學 - 新民高中',
-  },
-  {
-    routeNum: 3271,
-    route: '靜宜大學 - 新民高中',
-  },
-  {
-    routeNum: 322571,
-    route: '靜宜大學 - 新民高中',
-  },
-  {
-    routeNum: 56468,
-    route: '靜宜大學 - 新民高中',
-  },
+//   {
+//     routeNum: 35,
+//     route: '靜宜大學 - 新民高中',
+//   },
+//   {
+//     routeNum: 321,
+//     route: '靜宜大學 - 新民高中',
+//   },
+//   {
+//     routeNum: 3241,
+//     route: '靜宜大學 - 新民高中',
+//   },
+//   {
+//     routeNum: 32152,
+//     route: '靜宜大學 - 新民高中',
+//   },
+//   {
+//     routeNum: 3271,
+//     route: '靜宜大學 - 新民高中',
+//   },
+//   {
+//     routeNum: 322571,
+//     route: '靜宜大學 - 新民高中',
+//   },
+//   {
+//     routeNum: 56468,
+//     route: '靜宜大學 - 新民高中',
+//   },
 
-  {
-    routeNum: 65461,
-    route: '靜宜大學 - 新民高中',
-  },
-];
+//   {
+//     routeNum: 65461,
+//     route: '靜宜大學 - 新民高中',
+//   },
+// ];
 
-// eslint-disable-next-line arrow-body-style
 const Station: React.FC = () => {
   return (
     <>
@@ -132,7 +131,7 @@ const Station: React.FC = () => {
                 )}
               </StationList>
             </SearchGroup>
-            <BusList routes={routes} height="650" />
+            <BusList routes={[]} height="650" />
           </StationSearchPanel>
           <RoutesOffcanvas show={false} />
         </StationsContainer>

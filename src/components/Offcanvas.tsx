@@ -20,7 +20,6 @@ interface IOffcanvas {
   show: boolean;
 }
 
-// eslint-disable-next-line arrow-body-style
 const Offcanvas: React.FC<PropsWithChildren & IOffcanvas> = ({ children, show }) => {
   return (
     <Wrap show={show}>

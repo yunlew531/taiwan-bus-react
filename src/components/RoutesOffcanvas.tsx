@@ -214,7 +214,6 @@ interface IRoutesOffcanvasProps {
   show: boolean;
 }
 
-// eslint-disable-next-line arrow-body-style
 const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({ show }) => {
   const [busDirection, setBusDirection] = useState<0 | 1>(0);
 

@@ -168,7 +168,6 @@ const FavoriteBtn = styled.button<ThemeProps>`
   }
 `;
 
-// eslint-disable-next-line arrow-body-style
 const NearStation: React.FC = () => {
   return (
     <>

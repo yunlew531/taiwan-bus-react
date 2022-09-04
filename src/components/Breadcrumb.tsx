@@ -67,7 +67,6 @@ interface BreadcrumbProps {
   timeTable?: boolean;
 }
 
-// eslint-disable-next-line arrow-body-style
 const Breadcrumb: React.FC<BreadcrumbProps> = ({ title, copy, timeTable }) => {
   return (
     <BreadcrumbStyle>
