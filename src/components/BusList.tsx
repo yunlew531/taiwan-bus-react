@@ -67,8 +67,7 @@ const BusList: React.FC<IBusList> = ({
         <div>
           <span className="material-icons-outlined favorite">favorite_border</span>
           {/* <span className="material-icons-outlined favorite">favorite</span> */}
-          {city && <p className="cityName">{city}</p>}
-          {route.City && <p className="cityName">{route.City}</p>}
+          {city ? <p className="cityName">{city}</p> : <p className="cityName">{route.City}</p>}
         </div>
       </BusItem>
     ))}

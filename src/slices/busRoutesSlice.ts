@@ -13,6 +13,7 @@ export const busRoutesSlice = createSlice({
     setBusRoutes: (state, { payload }: PayloadAction<Array<IBusRoute>>) => {
       state.busRoutes = payload;
     },
+    clearBusRoutes: (state) => { state.busRoutes = []; },
   },
 });
 

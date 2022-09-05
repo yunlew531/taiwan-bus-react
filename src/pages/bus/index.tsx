@@ -1,13 +1,13 @@
 import styled from '@emotion/styled';
-import React, { useEffect } from 'react';
-import type { ThemeProps } from 'react-app-env';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import type { IBusRoute, ThemeProps } from 'react-app-env';
+import { Params, useParams } from 'react-router-dom';
 import Breadcrumb from 'components/Breadcrumb';
 import BusList from 'components/BusList';
 import Search from 'components/Search';
 import RoutesOffcanvas from 'components/RoutesOffcanvas';
-import { useGetRoutesByCityQuery } from 'services/busRoutes';
-import { useAppDispatch } from 'hooks';
+import { useLazyGetRoutesByCityQuery } from 'services/bus';
+import { useAppDispatch, useAppSelector } from 'hooks';
 import { setBusRoutes } from 'slices/busRoutesSlice';
 
 const MainContainer = styled.div`
@@ -87,11 +87,35 @@ const DedicatedBtn = styled(NumberBtn)<ThemeProps>`
 `;
 
 const Bus: React.FC = () => {
-  const { city: cityParams } = useParams();
+  const { city: cityParams }: Readonly<Params<string>> | { city: null } = useParams();
   const dispatch = useAppDispatch();
-  const { data: busRoutes = [] } = useGetRoutesByCityQuery(cityParams || '');
+  const [getRoutesTrigger] = useLazyGetRoutesByCityQuery();
+  const busRoutes = useAppSelector((state) => state.busRoutes.busRoutes);
 
-  const translateCity = (city = '') => {
+  const getRoutes = async () => {
+    if (!cityParams) return;
+    if (cityParams === 'Other_City') return;
+    if (cityParams === 'Taipei&NewTaipei') {
+      const [{ data: taipeiRoutes }, { data: newTaipeiRoutes }] = await Promise.all([getRoutesTrigger('Taipei'), getRoutesTrigger('NewTaipei')]);
+      if (taipeiRoutes?.length && newTaipeiRoutes?.length) {
+        dispatch(setBusRoutes([...taipeiRoutes, ...newTaipeiRoutes]));
+      }
+    } else {
+      getRoutesTrigger(cityParams).then(({ data }) => {
+        if (data?.length) dispatch(setBusRoutes(data));
+      }).catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    getRoutes().catch(() => {});
+
+    return () => {
+      dispatch(setBusRoutes([]));
+    };
+  }, []);
+
+  const translateCity = (city: string) => {
     let result: string;
 
     switch (city) {
@@ -120,11 +144,7 @@ const Bus: React.FC = () => {
     return result;
   };
 
-  const chineseCity = translateCity(cityParams);
-
-  useEffect(() => {
-    dispatch(setBusRoutes(busRoutes));
-  }, [busRoutes]);
+  const chineseCity = translateCity(cityParams || '');
 
   return (
     <>

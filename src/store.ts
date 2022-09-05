@@ -1,13 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import busRoutesReducer from 'slices/busRoutesSlice';
-import { busRoutesApi } from 'services/busRoutes';
+import { busApi } from 'services/bus';
 
 export const store = configureStore({
   reducer: {
-    [busRoutesApi.reducerPath]: busRoutesApi.reducer,
+    [busApi.reducerPath]: busApi.reducer,
     busRoutes: busRoutesReducer,
   },
-  middleware: (getCurrentMiddlewares) => getCurrentMiddlewares().concat(busRoutesApi.middleware),
+  middleware: (getCurrentMiddlewares) => getCurrentMiddlewares().concat(busApi.middleware),
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
