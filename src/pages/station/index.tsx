@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Breadcrumb from 'components/Breadcrumb';
 import styled from '@emotion/styled';
 import Search from 'components/Search';
@@ -62,61 +62,9 @@ const StationItem = styled.li<ThemeProps>`
   }
 `;
 
-// // TODO: test data
-// const routes = [
-//   {
-//     routeNum: 303,
-//     route: '台中國際機場 - 台中公園',
-//   },
-//   {
-//     routeNum: 301,
-//     route: '靜宜大學 - 新民高中',
-//   },
-//   {
-//     routeNum: 304,
-//     route: '靜宜大學 - 新民高中',
-//   },
-//   {
-//     routeNum: 30851,
-//     route: '靜宜大學 - 新民高中',
-//   },
-
-//   {
-//     routeNum: 35,
-//     route: '靜宜大學 - 新民高中',
-//   },
-//   {
-//     routeNum: 321,
-//     route: '靜宜大學 - 新民高中',
-//   },
-//   {
-//     routeNum: 3241,
-//     route: '靜宜大學 - 新民高中',
-//   },
-//   {
-//     routeNum: 32152,
-//     route: '靜宜大學 - 新民高中',
-//   },
-//   {
-//     routeNum: 3271,
-//     route: '靜宜大學 - 新民高中',
-//   },
-//   {
-//     routeNum: 322571,
-//     route: '靜宜大學 - 新民高中',
-//   },
-//   {
-//     routeNum: 56468,
-//     route: '靜宜大學 - 新民高中',
-//   },
-
-//   {
-//     routeNum: 65461,
-//     route: '靜宜大學 - 新民高中',
-//   },
-// ];
-
 const Station: React.FC = () => {
+  const [searchValue, setSearchValue] = useState('');
+
   return (
     <>
       <Breadcrumb title="站點查詢" copy timeTable />
@@ -124,7 +72,7 @@ const Station: React.FC = () => {
         <StationsContainer>
           <StationSearchPanel show>
             <SearchGroup>
-              <Search placeholder="請輸入站名" />
+              <Search value={searchValue} setValue={setSearchValue} placeholder="請輸入站名" />
               <StationList show={false}>
                 {Array.from(Array(10).keys()).map(
                   (item) => <StationItem key={item}>台中車站（成功路口）</StationItem>,

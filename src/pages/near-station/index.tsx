@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import type { ThemeProps } from 'react-app-env';
 import Breadcrumb from 'components/Breadcrumb';
@@ -169,13 +169,15 @@ const FavoriteBtn = styled.button<ThemeProps>`
 `;
 
 const NearStation: React.FC = () => {
+  const [searchValue, setSearchValue] = useState('');
+
   return (
     <>
       <Breadcrumb title="附近站牌" copy timeTable />
       <MainContainer>
         <StationsContainer>
           <Offcanvas show>
-            <Search placeholder="想去哪裡？" />
+            <Search value={searchValue} setValue={setSearchValue} placeholder="想去哪裡？" />
             <StationList>
               {
                 Array.from(Array(15).keys()).map((item) => (

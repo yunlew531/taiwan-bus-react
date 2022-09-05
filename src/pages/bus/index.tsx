@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
-import React, { useEffect, useRef, useState } from 'react';
-import type { IBusRoute, ThemeProps } from 'react-app-env';
-import { Params, useParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import type { ThemeProps } from 'react-app-env';
+import { useParams } from 'react-router-dom';
 import Breadcrumb from 'components/Breadcrumb';
 import BusList from 'components/BusList';
 import Search from 'components/Search';
@@ -87,33 +87,38 @@ const DedicatedBtn = styled(NumberBtn)<ThemeProps>`
 `;
 
 const Bus: React.FC = () => {
-  const { city: cityParams }: Readonly<Params<string>> | { city: null } = useParams();
+  const { city: cityParams } = useParams();
   const dispatch = useAppDispatch();
   const [getRoutesTrigger] = useLazyGetRoutesByCityQuery();
   const busRoutes = useAppSelector((state) => state.busRoutes.busRoutes);
-
-  const getRoutes = async () => {
-    if (!cityParams) return;
-    if (cityParams === 'Other_City') return;
-    if (cityParams === 'Taipei&NewTaipei') {
-      const [{ data: taipeiRoutes }, { data: newTaipeiRoutes }] = await Promise.all([getRoutesTrigger('Taipei'), getRoutesTrigger('NewTaipei')]);
-      if (taipeiRoutes?.length && newTaipeiRoutes?.length) {
-        dispatch(setBusRoutes([...taipeiRoutes, ...newTaipeiRoutes]));
-      }
-    } else {
-      getRoutesTrigger(cityParams).then(({ data }) => {
-        if (data?.length) dispatch(setBusRoutes(data));
-      }).catch(() => {});
-    }
-  };
+  const [searchValue, setSearctValue] = useState('');
 
   useEffect(() => {
+    const getRoutes = async () => {
+      if (!cityParams) return;
+      if (cityParams === 'Other_City') return;
+      if (cityParams === 'Taipei&NewTaipei') {
+        const [{ data: taipeiRoutes }, { data: newTaipeiRoutes }] = await Promise.all([getRoutesTrigger('Taipei'), getRoutesTrigger('NewTaipei')]);
+        if (taipeiRoutes?.length && newTaipeiRoutes?.length) {
+          dispatch(setBusRoutes([...taipeiRoutes, ...newTaipeiRoutes]));
+        }
+      } else {
+        getRoutesTrigger(cityParams).then(({ data }) => {
+          if (data?.length) dispatch(setBusRoutes(data));
+        }).catch(() => {});
+      }
+    };
     getRoutes().catch(() => {});
 
     return () => {
       dispatch(setBusRoutes([]));
     };
   }, []);
+
+  const busRoutesFilter = useMemo(
+    () => (searchValue ? busRoutes.filter((route) => route.RouteID.match(searchValue)) : busRoutes),
+    [searchValue, busRoutes],
+  );
 
   const translateCity = (city: string) => {
     let result: string;
@@ -146,6 +151,13 @@ const Bus: React.FC = () => {
 
   const chineseCity = translateCity(cityParams || '');
 
+  const resetSearch = () => setSearctValue('');
+
+  const handleNumberBoard = (e: React.MouseEvent) => {
+    const clickNum = (e.target as HTMLButtonElement).textContent as string;
+    setSearctValue((prev) => `${prev}${clickNum}`);
+  };
+
   return (
     <>
       <Breadcrumb title={chineseCity} copy timeTable />
@@ -153,15 +165,15 @@ const Bus: React.FC = () => {
         <RoutesContainer>
           <BusSearchPanel show>
             <BusListPanel>
-              <Search placeholder="輸入公車路線 / 起迄方向名或關鍵字" />
-              <BusList city={chineseCity} routes={busRoutes} height="420" />
+              <Search value={searchValue} setValue={setSearctValue} placeholder="輸入公車路線 / 起迄方向名或關鍵字" />
+              <BusList city={chineseCity} routes={busRoutesFilter} height="400" />
             </BusListPanel>
             <NumberBoard>
               <NumberBtnsGroup>
-                { Array.from(Array(9).keys()).map((item) => <NumberBtn key={item} type="button">{item + 1}</NumberBtn>)}
+                { Array.from(Array(9).keys()).map((item) => <NumberBtn key={item} onClick={handleNumberBoard} type="button">{item + 1}</NumberBtn>)}
                 <DedicatedBtn type="button">專用道</DedicatedBtn>
-                <NumberBtn type="button">0</NumberBtn>
-                <NumberBtn type="button">清除</NumberBtn>
+                <NumberBtn onClick={handleNumberBoard} type="button">0</NumberBtn>
+                <NumberBtn onClick={resetSearch} type="button">清除</NumberBtn>
               </NumberBtnsGroup>
             </NumberBoard>
           </BusSearchPanel>
