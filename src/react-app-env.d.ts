@@ -9,6 +9,10 @@ type StationStatus = '過站' | '進站中' | '即將進站' | '10分';
 interface IBusRoute {
   RouteUID: string;
   RouteID: string;
+  RouteName: {
+    En: string;
+    Zh_tw: string;
+  }
   Operators: Array<{
     OperatorName: {
       Zh_tw: string;
@@ -27,4 +31,30 @@ interface IBusRoute {
   City: string;
   CityCode: string;
   UpdateTime: string;
+}
+
+interface IBusRouteDetail {
+  RouteUID: string;
+  RouteID: string;
+  RouteName: {
+    Zh_tw: string;
+    En: string;
+  }
+  Direction: 0 | 1;
+  Stops: Array<{
+    StopUID: string;
+    StopID: string;
+    StopName: {
+      Zh_tw: string;
+      En: string;
+    }
+    StopBoarding: 0
+    StopSequence: 1
+    StopPosition: {
+      PositionLon: number;
+      PositionLat: number;
+      GeoHash: string;
+    }
+    StationID: string;
+  }>
 }

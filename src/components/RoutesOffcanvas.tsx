@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import type { ThemeProps, StationStatus } from 'react-app-env';
 import TimeBadge from 'components/TimeBadge';
+import { useAppSelector } from 'hooks';
 
 const RoutePanel = styled.div<ThemeProps & { show: boolean }>`
   position: absolute;
@@ -116,14 +117,14 @@ const RouteNum = styled.p`
   margin-bottom: 5px;
 `;
 
-const RouteName = styled.h2<ThemeProps>`
-  font-size: ${({ theme: { fontSizes: { fs_4 } } }) => fs_4};
-  font-weight: 300;
+const BusDirectionBtnGroup = styled.div`
+  display: flex;
 `;
 
 const BusDirectionBtn = styled.button<ThemeProps & { current: boolean }>`
-  width: 50%;
+  flex: 1 0;
   padding: 10px;
+  height: 42px;
   color: ${({ current, theme: { colors: { white, black } } }) => (current ? white : black)};
   border: none;
   border-radius: 5px 5px 0 0;
@@ -135,7 +136,9 @@ const BusDirectionBtn = styled.button<ThemeProps & { current: boolean }>`
 `;
 
 const BusStationList = styled.ul`
-  padding: 30px;
+  height: 560px;
+  padding: 0 30px;
+  overflow-y: auto;
 `;
 
 const BusStationItem = styled.li<ThemeProps & { status?: StationStatus }>`
@@ -171,23 +174,6 @@ const BusStationItem = styled.li<ThemeProps & { status?: StationStatus }>`
   }
 `;
 
-// const TimeBadge = styled.span<ThemeProps & { status?: StationStatus }>`
-//   display: inline-block;
-//   width: 77px;
-//   color: ${({ theme: { colors: { white } } }) => white};
-//   text-align: center;
-//   margin-right: 18px;
-//   border-radius: 10px;
-//   padding: 6px;
-//   background-color: ${
-//   ({ status, theme: { colors: { gray_800, secondary, primary } } }) => {
-//     if (status === '過站') return gray_800;
-//     if (status === '進站中' || status === '即將進站') return secondary;
-//     return primary;
-//   }
-// };
-// `;
-
 const BusStationItemTitle = styled.p<ThemeProps & { status?: StationStatus }>`
   margin-right: auto;
   font-weight: 400;
@@ -212,29 +198,55 @@ const BusPlate = styled.p<ThemeProps>`
 
 interface IRoutesOffcanvasProps {
   show: boolean;
+  setIsRouteOffcanvasShow: React.Dispatch<React.SetStateAction<boolean>>;
+  setSearchOffcanvasShow: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({ show }) => {
+const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
+  show,
+  setIsRouteOffcanvasShow,
+  setSearchOffcanvasShow,
+}) => {
+  const busRoute = useAppSelector((state) => state.busRoutes.currentRouteInOffcanvas);
   const [busDirection, setBusDirection] = useState<0 | 1>(0);
+
+  const handleOffcanvas = () => {
+    setIsRouteOffcanvasShow(false);
+    setSearchOffcanvasShow(true);
+  };
 
   return (
     <RoutePanel show={show}>
       <RouteDescContainer>
         <RouteDescContainerHeader>
-          <BackToSearchBtn type="button">
+          <BackToSearchBtn type="button" onClick={handleOffcanvas}>
             <span className="material-icons-outlined">chevron_left</span>
             <p>返回搜尋</p>
           </BackToSearchBtn>
           <span className="material-icons-outlined favorite">favorite_border</span>
           {/* <span className="material-icons-outlined favorite">favorite</span> */}
         </RouteDescContainerHeader>
-        <RouteNum>300</RouteNum>
-        <RouteName>台灣大道公車專用道</RouteName>
+        <RouteNum>{busRoute[busDirection]?.RouteName.Zh_tw}</RouteNum>
       </RouteDescContainer>
-      <BusDirectionBtn type="button" current={busDirection === 0}>往 台中車站</BusDirectionBtn>
-      <BusDirectionBtn type="button" current={busDirection === 1}>往 靜宜大學</BusDirectionBtn>
+      <BusDirectionBtnGroup>
+        <BusDirectionBtn onClick={() => setBusDirection(0)} type="button" current={busDirection === 0}>
+          往 { busRoute[0]?.Stops[busRoute[0].Stops.length - 1].StopName.Zh_tw }
+        </BusDirectionBtn>
+        {busRoute[1] && (
+        <BusDirectionBtn onClick={() => setBusDirection(1)} type="button" current={busDirection === 1}>
+          往{busRoute[0]?.Stops[0].StopName.Zh_tw}
+        </BusDirectionBtn>
+        )}
+      </BusDirectionBtnGroup>
       <BusStationList>
-        <BusStationItem status="過站">
+        {busRoute[busDirection]?.Stops.map((station) => (
+          <BusStationItem key={station.StopUID} status="過站">
+            <TimeBadge status="過站">10: 10</TimeBadge>
+            <BusStationItemTitle status="過站">{station.StopName.Zh_tw}</BusStationItemTitle>
+            <BusPlate />
+          </BusStationItem>
+        ))}
+        {/* <BusStationItem status="過站">
           <TimeBadge status="過站">10: 10</TimeBadge>
           <BusStationItemTitle status="過站">靜宜大學（專用道）</BusStationItemTitle>
           <BusPlate />
@@ -248,7 +260,7 @@ const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({ show }) => {
           <TimeBadge status="10分">10分</TimeBadge>
           <BusStationItemTitle status="10分">弘光科技大學（專用道）</BusStationItemTitle>
           <BusPlate />
-        </BusStationItem>
+        </BusStationItem> */}
       </BusStationList>
       <RouteDescContainerFooter>
         <UpdateProgress>

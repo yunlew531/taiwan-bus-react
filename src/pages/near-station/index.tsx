@@ -15,7 +15,6 @@ const MainContainer = styled.div`
   bottom: 0;
   display: flex;
   align-items: stretch;
-  border: 1px red dashed;
 `;
 
 const StationsContainer = styled.div`
@@ -249,7 +248,7 @@ const NearStation: React.FC = () => {
               </RouteList>
             </RoutesContainer>
           </Offcanvas>
-          <RoutesOffcanvas show />
+          {/* <RoutesOffcanvas show /> */}
         </StationsContainer>
       </MainContainer>
     </>

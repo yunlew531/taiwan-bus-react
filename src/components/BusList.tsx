@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import styled from '@emotion/styled';
 import type { IBusRoute, ThemeProps } from 'react-app-env';
+import translateCity from 'utils/translateCity';
+import { useLazyGetRouteByRouteUidQuery } from 'services/bus';
+import { setRouteInOffcanvas } from 'slices/busRoutesSlice';
+import { useAppDispatch } from 'hooks';
 
 const BusListStyle = styled.ul<{ height: string | undefined }>`
   height: ${({ height }) => (height ? `${height}px` : 'auto')};
@@ -49,33 +53,50 @@ const BusItem = styled.li<ThemeProps>`
 `;
 
 interface IBusList {
-  city?: string | null;
   routes: Array<IBusRoute>;
   height: string;
+  setIsRouteOffcanvasShow: React.Dispatch<React.SetStateAction<boolean>>;
+  setSearchOffcanvasShow: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 const BusList: React.FC<IBusList> = ({
-  city, routes, height,
-}) => (
-  <BusListStyle height={height}>
-    {routes.map((route) => (
-      <BusItem key={route.RouteUID}>
-        <div>
-          <p className="route-num">{route.RouteID}</p>
-          <p className="route-name">{route.DepartureStopNameZh} - {route.DestinationStopNameZh}</p>
-        </div>
-        <div>
-          <span className="material-icons-outlined favorite">favorite_border</span>
-          {/* <span className="material-icons-outlined favorite">favorite</span> */}
-          {city ? <p className="cityName">{city}</p> : <p className="cityName">{route.City}</p>}
-        </div>
-      </BusItem>
-    ))}
-  </BusListStyle>
-);
+  routes, height, setIsRouteOffcanvasShow, setSearchOffcanvasShow,
+}) => {
+  const dispatch = useAppDispatch();
+  const [getRouteByIdTrigger, { data: routeData }] = useLazyGetRouteByRouteUidQuery();
 
-BusList.defaultProps = {
-  city: null,
+  const handleOffcanvas = (route: IBusRoute) => {
+    setIsRouteOffcanvasShow(true);
+    setSearchOffcanvasShow(false);
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    const { City, RouteName: { Zh_tw }, RouteUID } = route;
+
+    getRouteByIdTrigger({ city: City, routeName: Zh_tw, routeUid: RouteUID }).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (routeData) {
+      dispatch(setRouteInOffcanvas(routeData));
+    }
+  }, [routeData]);
+
+  return (
+    <BusListStyle height={height}>
+      {routes.map((route) => (
+        <BusItem key={route.RouteUID} onClick={() => handleOffcanvas(route)}>
+          <div>
+            <p className="route-num">{route.RouteName.Zh_tw}</p>
+            <p className="route-name">{route.DepartureStopNameZh} - {route.DestinationStopNameZh}</p>
+          </div>
+          <div>
+            <span className="material-icons-outlined favorite">favorite_border</span>
+            {/* <span className="material-icons-outlined favorite">favorite</span> */}
+            <p className="cityName">{translateCity(route.City)}</p>
+          </div>
+        </BusItem>
+      ))}
+    </BusListStyle>
+  );
 };
 
 export default BusList;

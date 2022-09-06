@@ -1,5 +1,7 @@
 import styled from '@emotion/styled';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useEffect, useMemo, useState,
+} from 'react';
 import type { ThemeProps } from 'react-app-env';
 import { useParams } from 'react-router-dom';
 import Breadcrumb from 'components/Breadcrumb';
@@ -9,6 +11,7 @@ import RoutesOffcanvas from 'components/RoutesOffcanvas';
 import { useLazyGetRoutesByCityQuery } from 'services/bus';
 import { useAppDispatch, useAppSelector } from 'hooks';
 import { setBusRoutes } from 'slices/busRoutesSlice';
+import translateCity from 'utils/translateCity';
 
 const MainContainer = styled.div`
   position: absolute;
@@ -18,7 +21,6 @@ const MainContainer = styled.div`
   bottom: 0;
   display: flex;
   align-items: stretch;
-  border: 1px red dashed;
 `;
 
 const RoutesContainer = styled.div`
@@ -116,38 +118,11 @@ const Bus: React.FC = () => {
   }, []);
 
   const busRoutesFilter = useMemo(
-    () => (searchValue ? busRoutes.filter((route) => route.RouteID.match(searchValue)) : busRoutes),
+    () => (searchValue ? busRoutes.filter(
+      (route) => route.RouteName.Zh_tw.match(searchValue),
+    ) : busRoutes),
     [searchValue, busRoutes],
   );
-
-  const translateCity = (city: string) => {
-    let result: string;
-
-    switch (city) {
-      case 'Taipei&NewTaipei':
-        result = '台北市 ＆ 新北市';
-        break;
-      case 'Taoyuan':
-        result = '桃園市';
-        break;
-      case 'Taichung':
-        result = '台中市';
-        break;
-      case 'Tainan':
-        result = '台南市';
-        break;
-      case 'Kaohsiung':
-        result = '高雄市';
-        break;
-      case 'Other_City':
-        result = '其他城市';
-        break;
-      default:
-        result = city;
-    }
-
-    return result;
-  };
 
   const chineseCity = translateCity(cityParams || '');
 
@@ -158,15 +133,23 @@ const Bus: React.FC = () => {
     setSearctValue((prev) => `${prev}${clickNum}`);
   };
 
+  const [isRouteOffcanvasOpen, setIsRouteOffcanvasShow] = useState(false);
+  const [isSearchOffcanvasOpen, setSearchOffcanvasShow] = useState(true);
+
   return (
     <>
       <Breadcrumb title={chineseCity} copy timeTable />
       <MainContainer>
         <RoutesContainer>
-          <BusSearchPanel show>
+          <BusSearchPanel show={isSearchOffcanvasOpen}>
             <BusListPanel>
               <Search value={searchValue} setValue={setSearctValue} placeholder="輸入公車路線 / 起迄方向名或關鍵字" />
-              <BusList city={chineseCity} routes={busRoutesFilter} height="400" />
+              <BusList
+                routes={busRoutesFilter}
+                setIsRouteOffcanvasShow={setIsRouteOffcanvasShow}
+                setSearchOffcanvasShow={setSearchOffcanvasShow}
+                height="400"
+              />
             </BusListPanel>
             <NumberBoard>
               <NumberBtnsGroup>
@@ -177,7 +160,11 @@ const Bus: React.FC = () => {
               </NumberBtnsGroup>
             </NumberBoard>
           </BusSearchPanel>
-          <RoutesOffcanvas show={false} />
+          <RoutesOffcanvas
+            show={isRouteOffcanvasOpen}
+            setIsRouteOffcanvasShow={setIsRouteOffcanvasShow}
+            setSearchOffcanvasShow={setSearchOffcanvasShow}
+          />
         </RoutesContainer>
       </MainContainer>
     </>

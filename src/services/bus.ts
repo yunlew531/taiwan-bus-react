@@ -1,5 +1,11 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { IBusRoute } from 'react-app-env';
+import { IBusRoute, IBusRouteDetail } from 'react-app-env';
+
+interface IGetRouteData {
+  city: string;
+  routeName: string;
+  routeUid: string;
+}
 
 export const busApi = createApi({
   reducerPath: 'busApi',
@@ -8,7 +14,14 @@ export const busApi = createApi({
     getRoutesByCity: builder.query<Array<IBusRoute>, string>({
       query: (city) => `Route/City/${city}`,
     }),
+    getRouteByRouteUid: builder.query<Array<IBusRouteDetail>, IGetRouteData>({
+      query: ({ city, routeName, routeUid }) => `DisplayStopOfRoute/City/${city}/${routeName}?$filter=contains(RouteUID, '${routeUid}')`,
+    }),
   }),
 });
 
-export const { useGetRoutesByCityQuery, useLazyGetRoutesByCityQuery } = busApi;
+export const {
+  useGetRoutesByCityQuery,
+  useLazyGetRoutesByCityQuery,
+  useLazyGetRouteByRouteUidQuery,
+} = busApi;
