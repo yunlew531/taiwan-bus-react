@@ -222,7 +222,7 @@ const NearStation: React.FC = () => {
                   </FavoriteBtn>
                 </RouteItem>
                 <RouteItem>
-                  <TimeBadge status="即將進站">即將進站</TimeBadge>
+                  <TimeBadge status="進站中">即將進站</TimeBadge>
                   <RouteContent>
                     <p className="route-num">161</p>
                     <p className="route-directoin">往 中科管理局</p>

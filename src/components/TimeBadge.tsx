@@ -15,7 +15,8 @@ const TimeBadgeStyle = styled.span<ThemeProps & { status?: StationStatus }>`
   background-color: ${
   ({ status, theme: { colors: { gray_800, secondary, primary } } }) => {
     if (status === '過站') return gray_800;
-    if (status === '進站中' || status === '即將進站') return secondary;
+    if (status === '進站中') return secondary;
+    if (status === '稍後進站') return primary;
     return primary;
   }
 };

@@ -4,7 +4,7 @@ import theme from 'styleSheets/theme';
 
 type ThemeProps = { theme?: typeof theme };
 
-type StationStatus = '過站' | '進站中' | '即將進站' | '10分';
+type StationStatus = '過站' | '進站中' | '稍後進站' | '10分';
 
 interface IBusRoute {
   RouteUID: string;
@@ -27,10 +27,28 @@ interface IBusRoute {
   DepartureStopNameEn: string
   DestinationStopNameZh: string;
   DestinationStopNameEn: string;
-  RouteMapImageUrl: 'http://ebus.tycg.gov.tw/cms/api/route/130/map/1364/image',
+  RouteMapImageUrl: 'http://ebus.tycg.gov.tw/cms/api/route/130/map/1364/image';
   City: string;
   CityCode: string;
   UpdateTime: string;
+}
+
+interface IStop {
+  Estimates?: Array<IEstimate>;
+  StopUID: string;
+  StopID: string;
+  StopName: {
+    Zh_tw: string;
+    En: string;
+  }
+  StopBoarding: 0
+  StopSequence: 1
+  StopPosition: {
+    PositionLon: number;
+    PositionLat: number;
+    GeoHash: string;
+  }
+  StationID: string;
 }
 
 interface IBusRouteDetail {
@@ -41,20 +59,46 @@ interface IBusRouteDetail {
     En: string;
   }
   Direction: 0 | 1;
-  Stops: Array<{
-    StopUID: string;
-    StopID: string;
-    StopName: {
-      Zh_tw: string;
-      En: string;
-    }
-    StopBoarding: 0
-    StopSequence: 1
-    StopPosition: {
-      PositionLon: number;
-      PositionLat: number;
-      GeoHash: string;
-    }
-    StationID: string;
-  }>
+  Stops: Array<IStop>;
+}
+
+interface IBusStopArriveTime {
+  PlateNumb: string;
+  StopUID: string;
+  StopID: string;
+  StopName: {
+    Zh_tw: string;
+    En: string;
+  },
+  RouteUID: string;
+  RouteID: string;
+  RouteName: {
+    Zh_tw: string;
+    En: string;
+  },
+  SubRouteUID: string;
+  SubRouteID: string;
+  SubRouteName: {
+    Zh_tw: string;
+    En: string;
+  },
+  Direction: number;
+  EstimateTime: string;
+  StopSequence: string;
+  StopStatus: number;
+  NextBusTime: string;
+  Estimates: Array<IEstimate>;
+  SrcUpdateTime: string;
+  UpdateTime: string;
+}
+
+interface IEstimate {
+  PlateNumb: string;
+  EstimateTime: number;
+  IsLastBus: boolean;
+}
+
+interface IAccessToken {
+  access_token: string;
+  expires_in: number;
 }

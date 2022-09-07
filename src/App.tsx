@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, useRoutes } from 'react-router-dom';
 import { ThemeProvider } from '@emotion/react';
 import theme from 'styleSheets/theme';
 import styled from '@emotion/styled';
 import Header from 'components/Header';
 import Footer from 'components/Footer';
+import getAuthorizationHeader from 'utils/getAuthorizationHeader';
+import Cookies from 'js-cookie';
 import routes from './routes';
 
 const Wrap = styled.div`
@@ -20,6 +22,14 @@ const MainContainer = styled.div`
 
 const App = () => {
   const element = useRoutes(routes);
+
+  useEffect(() => {
+    getAuthorizationHeader().then(({ access_token }) => {
+      Cookies.set('taiwanBus', access_token, { expires: 1 });
+    }).catch((err) => {
+      console.error(err);
+    });
+  }, []);
 
   return (
     <ThemeProvider theme={theme}>

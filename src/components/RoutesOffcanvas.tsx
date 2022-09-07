@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
-import type { ThemeProps, StationStatus } from 'react-app-env';
+import type { ThemeProps, StationStatus, IEstimate } from 'react-app-env';
 import TimeBadge from 'components/TimeBadge';
 import { useAppSelector } from 'hooks';
 
@@ -157,7 +157,7 @@ const BusStationItem = styled.li<ThemeProps & { status?: StationStatus }>`
     border: 1px solid ${({ theme: { colors: { white } } }) => white};
   ${
   ({ status, theme: { colors: { secondary, gray_800 } } }) => {
-    if (status === '進站中' || status === '即將進站') {
+    if (status === '進站中' || status === '稍後進站') {
       return `
         background-color: ${secondary};
         width: 15px;
@@ -215,6 +215,12 @@ const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
     setSearchOffcanvasShow(true);
   };
 
+  const handleBusStationStatus = (estimate: number | null) => {
+    if (!estimate) return '過站';
+    if (estimate <= 300) return '進站中';
+    return '稍後進站';
+  };
+
   return (
     <RoutePanel show={show}>
       <RouteDescContainer>
@@ -239,10 +245,15 @@ const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
         )}
       </BusDirectionBtnGroup>
       <BusStationList>
-        {busRoute[busDirection]?.Stops.map((station) => (
-          <BusStationItem key={station.StopUID} status="過站">
-            <TimeBadge status="過站">10: 10</TimeBadge>
-            <BusStationItemTitle status="過站">{station.StopName.Zh_tw}</BusStationItemTitle>
+        {busRoute[busDirection]?.Stops.map(({ StopUID, StopName, Estimates }) => (
+          <BusStationItem
+            key={StopUID}
+            status={Estimates && handleBusStationStatus(Estimates[0].EstimateTime)}
+          >
+            {!Estimates && <TimeBadge status="過站">尚未發車</TimeBadge>}
+            {Estimates && Estimates[0].EstimateTime <= 300 && <TimeBadge status="進站中">即將進站</TimeBadge>}
+            {Estimates && Estimates[0].EstimateTime > 300 && <TimeBadge status="稍後進站">{Estimates[0].EstimateTime / 60} 分</TimeBadge>}
+            <BusStationItemTitle status="過站">{StopName.Zh_tw}</BusStationItemTitle>
             <BusPlate />
           </BusStationItem>
         ))}
