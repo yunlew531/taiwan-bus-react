@@ -75,12 +75,16 @@ const BusList: React.FC<IBusList> = ({
 
   const sortBusStopArriveTimesByDirection = (busStops: Array<IBusStopArriveTime>) => busStops
     .reduce((prev, busStop) => {
-      const { Direction, StopUID } = busStop;
+      const {
+        Direction, StopUID, EstimateTime, Estimates = [],
+      } = busStop;
+      const estimates = [...Estimates];
+      estimates[0] = estimates[0] || { EstimateTime };
 
       if (Direction === 0) {
-        prev.directionGo[StopUID] = busStop.Estimates;
+        prev.directionGo[StopUID] = estimates;
       } else {
-        prev.directionReturn[StopUID] = busStop.Estimates;
+        prev.directionReturn[StopUID] = estimates;
       }
       return prev;
     }, { directionGo: {}, directionReturn: {} } as IBusDirectionSort);
@@ -98,11 +102,13 @@ const BusList: React.FC<IBusList> = ({
         { ...stop, Estimates: directionGo[stop.StopUID] })),
     };
 
-    routesWithBusArriveTime[1] = {
-      ...routesData[1],
-      Stops: routesData[1].Stops.map((stop) => (
-        { ...stop, Estimates: directionReturn[stop.StopUID] })),
-    };
+    if (routesData.length === 2) {
+      routesWithBusArriveTime[1] = {
+        ...routesData[1],
+        Stops: routesData[1].Stops.map((stop) => (
+          { ...stop, Estimates: directionReturn[stop.StopUID] })),
+      };
+    }
 
     return routesWithBusArriveTime;
   };
@@ -110,16 +116,20 @@ const BusList: React.FC<IBusList> = ({
   const handleOffcanvas = async (route: IBusRoute) => {
     setIsRouteOffcanvasShow(true);
     setSearchOffcanvasShow(false);
+    try {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      const { City, RouteName: { Zh_tw }, RouteUID } = route;
+      const reqData = { city: City, routeName: Zh_tw, routeUid: RouteUID };
+      const [{ data: routeData = [] }, { data: busArriveTimesData = [] }] = await Promise.all(
+        [getRouteByUidTrigger(reqData), getBusArriveTimesTrigger(reqData)],
+      );
+      const busStopArriveTimes = sortBusStopArriveTimesByDirection(busArriveTimesData);
+      const routesWithBusArriveTime = mergeBusStopAndArriveTime(routeData, busStopArriveTimes);
 
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    const { City, RouteName: { Zh_tw }, RouteUID } = route;
-    const reqData = { city: City, routeName: Zh_tw, routeUid: RouteUID };
-    const [{ data: routeData = [] }, { data: busArriveTimesData = [] }] = await Promise.all(
-      [getRouteByUidTrigger(reqData), getBusArriveTimesTrigger(reqData)],
-    );
-    const busStopArriveTimes = sortBusStopArriveTimesByDirection(busArriveTimesData);
-    const routesWithBusArriveTime = mergeBusStopAndArriveTime(routeData, busStopArriveTimes);
-    dispatch(setRouteInOffcanvas(routesWithBusArriveTime));
+      dispatch(setRouteInOffcanvas(routesWithBusArriveTime));
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import type { ThemeProps, StationStatus, IEstimate } from 'react-app-env';
 import TimeBadge from 'components/TimeBadge';
@@ -136,7 +136,7 @@ const BusDirectionBtn = styled.button<ThemeProps & { current: boolean }>`
 `;
 
 const BusStationList = styled.ul`
-  height: 560px;
+  height: calc(100% - 209px);
   padding: 0 30px;
   overflow-y: auto;
 `;
@@ -148,20 +148,47 @@ const BusStationItem = styled.li<ThemeProps & { status?: StationStatus }>`
   border-bottom: 1px solid ${({ theme: { colors: { gray_400 } } }) => gray_400};
   border-right: 1px solid ${({ theme: { colors: { gray_600 } } }) => gray_600};
   padding: 13px 14px 13px 0;
+  &:first-of-type, &:last-of-type {
+    &::before {
+      content: '';
+      position: absolute;
+      right: -1px;
+      width: 2px;
+      height: 50%;
+      background-color: ${({ theme: { colors: { white } } }) => white};
+    }
+  }
+  &:first-of-type {
+    &::before {
+      top: 0;
+    }
+  }
+  &:last-of-type {
+    &::before {
+      bottom: 0;
+    }
+  }
   &::after {
     content: '';
     position: absolute;
     right: 0;
     transform: translateX(50%);
     border-radius: 100%;
-    border: 1px solid ${({ theme: { colors: { white } } }) => white};
+    border: 2px solid ${({ theme: { colors: { white } } }) => white};
   ${
-  ({ status, theme: { colors: { secondary, gray_800 } } }) => {
-    if (status === '進站中' || status === '稍後進站') {
+  ({ status, theme: { colors: { secondary, gray_800, primary } } }) => {
+    if (status === '進站中') {
       return `
         background-color: ${secondary};
         width: 15px;
         height: 15px;
+      `;
+    }
+    if (status === '稍後進站') {
+      return `
+        background-color: ${primary};
+        width: 12px;
+        height: 12px;
       `;
     }
     return `
@@ -215,10 +242,21 @@ const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
     setSearchOffcanvasShow(true);
   };
 
-  const handleBusStationStatus = (estimate: number | null) => {
-    if (!estimate) return '過站';
-    if (estimate <= 300) return '進站中';
+  const handleBusStationStatus = (estimates = [] as Array<IEstimate>) => {
+    const { EstimateTime } = estimates[0];
+    if (EstimateTime === undefined) return '過站';
+    if (EstimateTime <= 180) return '進站中';
     return '稍後進站';
+  };
+
+  const handleTimeBadgeContent = (
+    busStatusInEachStation: StationStatus,
+    estimates = [] as Array<IEstimate>,
+  ) => {
+    const { EstimateTime } = estimates[0];
+    if (EstimateTime === undefined) return '尚未發車';
+    if (busStatusInEachStation === '進站中') return '即將進站';
+    return `${Math.round(EstimateTime / 60)} 分`;
   };
 
   return (
@@ -248,30 +286,21 @@ const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
         {busRoute[busDirection]?.Stops.map(({ StopUID, StopName, Estimates }) => (
           <BusStationItem
             key={StopUID}
-            status={Estimates && handleBusStationStatus(Estimates[0].EstimateTime)}
+            status={handleBusStationStatus(Estimates)}
           >
-            {!Estimates && <TimeBadge status="過站">尚未發車</TimeBadge>}
-            {Estimates && Estimates[0].EstimateTime <= 300 && <TimeBadge status="進站中">即將進站</TimeBadge>}
-            {Estimates && Estimates[0].EstimateTime > 300 && <TimeBadge status="稍後進站">{Estimates[0].EstimateTime / 60} 分</TimeBadge>}
-            <BusStationItemTitle status="過站">{StopName.Zh_tw}</BusStationItemTitle>
-            <BusPlate />
+            {/* {!Estimates && <TimeBadge status="過站">尚未發車</TimeBadge>} */}
+            <TimeBadge
+              status={handleBusStationStatus(Estimates)}
+            >{handleTimeBadgeContent(handleBusStationStatus(Estimates), Estimates)}
+            </TimeBadge>
+            <BusStationItemTitle
+              status={Estimates ? handleBusStationStatus(Estimates) : '過站'}
+            >{StopName.Zh_tw}
+            </BusStationItemTitle>
+            {Estimates && Estimates && handleBusStationStatus(Estimates) === '進站中'
+              && <BusPlate>{Estimates[0].PlateNumb}</BusPlate>}
           </BusStationItem>
         ))}
-        {/* <BusStationItem status="過站">
-          <TimeBadge status="過站">10: 10</TimeBadge>
-          <BusStationItemTitle status="過站">靜宜大學（專用道）</BusStationItemTitle>
-          <BusPlate />
-        </BusStationItem>
-        <BusStationItem status="進站中">
-          <TimeBadge status="進站中">進站中</TimeBadge>
-          <BusStationItemTitle status="進站中">晉江寮（專用道）</BusStationItemTitle>
-          <BusPlate>F2E-888 無障礙</BusPlate>
-        </BusStationItem>
-        <BusStationItem status="10分">
-          <TimeBadge status="10分">10分</TimeBadge>
-          <BusStationItemTitle status="10分">弘光科技大學（專用道）</BusStationItemTitle>
-          <BusPlate />
-        </BusStationItem> */}
       </BusStationList>
       <RouteDescContainerFooter>
         <UpdateProgress>

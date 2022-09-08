@@ -35,6 +35,7 @@ interface IBusRoute {
 
 interface IStop {
   Estimates?: Array<IEstimate>;
+  EstimateTime?: number;
   StopUID: string;
   StopID: string;
   StopName: {
@@ -83,7 +84,7 @@ interface IBusStopArriveTime {
     En: string;
   },
   Direction: number;
-  EstimateTime: string;
+  EstimateTime: number;
   StopSequence: string;
   StopStatus: number;
   NextBusTime: string;
@@ -93,9 +94,9 @@ interface IBusStopArriveTime {
 }
 
 interface IEstimate {
-  PlateNumb: string;
+  PlateNumb?: string;
   EstimateTime: number;
-  IsLastBus: boolean;
+  IsLastBus?: boolean;
 }
 
 interface IAccessToken {
