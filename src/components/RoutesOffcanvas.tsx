@@ -242,7 +242,9 @@ const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
     setSearchOffcanvasShow(true);
   };
 
-  const handleBusStationStatus = (estimates = [] as Array<IEstimate>) => {
+  const handleBusStationStatus = (estimates: Array<IEstimate>) => {
+    console.log(estimates[0]);
+
     const { EstimateTime } = estimates[0];
     if (EstimateTime === undefined) return '過站';
     if (EstimateTime <= 180) return '進站中';

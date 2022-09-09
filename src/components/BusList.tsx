@@ -99,7 +99,7 @@ const BusList: React.FC<IBusList> = ({
     routesWithBusArriveTime[0] = {
       ...routesData[0],
       Stops: routesData[0].Stops.map((stop) => (
-        { ...stop, Estimates: directionGo[stop.StopUID] })),
+        { ...stop, Estimates: directionGo[stop.StopUID] || [[]] })),
     };
 
     if (routesData.length === 2) {
@@ -109,6 +109,7 @@ const BusList: React.FC<IBusList> = ({
           { ...stop, Estimates: directionReturn[stop.StopUID] })),
       };
     }
+    console.log(1, routesWithBusArriveTime);
 
     return routesWithBusArriveTime;
   };

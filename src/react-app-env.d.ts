@@ -34,7 +34,7 @@ interface IBusRoute {
 }
 
 interface IStop {
-  Estimates?: Array<IEstimate>;
+  Estimates: Array<IEstimate>;
   EstimateTime?: number;
   StopUID: string;
   StopID: string;
