@@ -21,7 +21,7 @@ interface IBusRoute {
   }>
   SubRoutes: Array<{
     Headsign: string;
-    Direction: number;
+    Direction: 0 | 1;
   }>
   DepartureStopNameZh: string;
   DepartureStopNameEn: string
@@ -32,6 +32,8 @@ interface IBusRoute {
   CityCode: string;
   UpdateTime: string;
 }
+
+type PositionLatLon = [number, number];
 
 interface IStop {
   Estimates: Array<IEstimate>;
@@ -83,7 +85,7 @@ interface IBusStopArriveTime {
     Zh_tw: string;
     En: string;
   },
-  Direction: number;
+  Direction: 0 | 1;
   EstimateTime: number;
   StopSequence: string;
   StopStatus: number;
@@ -102,4 +104,24 @@ interface IEstimate {
 interface IAccessToken {
   access_token: string;
   expires_in: number;
+}
+
+interface IShapeOfBusRoute {
+  RouteUID: string;
+  RouteID: string;
+  RouteName: {
+    Zh_tw: string;
+    En: string;
+  },
+  SubRouteUID: string;
+  SubRouteID: string;
+  SubRouteName: {
+    Zh_tw: string;
+    En: string;
+  },
+  Direction: 0 | 1;
+  Geometry: string;
+  EncodedPolyline: string;
+  UpdateTime: string;
+  VersionID: number;
 }

@@ -1,8 +1,6 @@
 import styled from '@emotion/styled';
-import React, {
-  useEffect, useMemo, useState,
-} from 'react';
-import type { ThemeProps } from 'react-app-env';
+import React, { useEffect, useMemo, useState } from 'react';
+import type { PositionLatLon, ThemeProps } from 'react-app-env';
 import { useParams } from 'react-router-dom';
 import Breadcrumb from 'components/Breadcrumb';
 import BusList from 'components/BusList';
@@ -12,6 +10,7 @@ import { useLazyGetRoutesByCityQuery } from 'services/bus';
 import { useAppDispatch, useAppSelector } from 'hooks';
 import { setBusRoutes } from 'slices/busRoutesSlice';
 import translateCity from 'utils/translateCity';
+import Leaflet from 'components/Leaflet';
 
 const MainContainer = styled.div`
   position: absolute;
@@ -93,7 +92,9 @@ const Bus: React.FC = () => {
   const dispatch = useAppDispatch();
   const [getRoutesTrigger] = useLazyGetRoutesByCityQuery();
   const busRoutes = useAppSelector((state) => state.busRoutes.busRoutes);
-  const [searchValue, setSearctValue] = useState('');
+  const busRoute = useAppSelector((state) => state.busRoutes.currentRouteInOffcanvas);
+  const [searchValue, setSearchValue] = useState('');
+  const [busDirection, setBusDirection] = useState<0 | 1>(0);
 
   useEffect(() => {
     const getRoutes = async () => {
@@ -117,6 +118,17 @@ const Bus: React.FC = () => {
     };
   }, []);
 
+  const [polyLine, setPolyLine] = useState<Array<PositionLatLon>>([]);
+
+  useEffect(() => {
+    const polyLineArr: Array<PositionLatLon> = busRoute[0]?.Stops.map((station) => {
+      const { PositionLat, PositionLon } = station.StopPosition;
+      return [PositionLat, PositionLon];
+    });
+
+    setPolyLine(polyLineArr);
+  }, [busRoute]);
+
   const busRoutesFilter = useMemo(
     () => (searchValue ? busRoutes.filter(
       (route) => route.RouteName.Zh_tw.match(searchValue),
@@ -126,11 +138,11 @@ const Bus: React.FC = () => {
 
   const chineseCity = translateCity(cityParams || '');
 
-  const resetSearch = () => setSearctValue('');
+  const resetSearch = () => setSearchValue('');
 
   const handleNumberBoard = (e: React.MouseEvent) => {
     const clickNum = (e.target as HTMLButtonElement).textContent as string;
-    setSearctValue((prev) => `${prev}${clickNum}`);
+    setSearchValue((prev) => `${prev}${clickNum}`);
   };
 
   const [isRouteOffcanvasOpen, setIsRouteOffcanvasShow] = useState(false);
@@ -143,7 +155,7 @@ const Bus: React.FC = () => {
         <RoutesContainer>
           <BusSearchPanel show={isSearchOffcanvasOpen}>
             <BusListPanel>
-              <Search value={searchValue} setValue={setSearctValue} placeholder="輸入公車路線 / 起迄方向名或關鍵字" />
+              <Search value={searchValue} setValue={setSearchValue} placeholder="輸入公車路線 / 起迄方向名或關鍵字" />
               <BusList
                 routes={busRoutesFilter}
                 setIsRouteOffcanvasShow={setIsRouteOffcanvasShow}
@@ -162,10 +174,13 @@ const Bus: React.FC = () => {
           </BusSearchPanel>
           <RoutesOffcanvas
             show={isRouteOffcanvasOpen}
+            busDirection={busDirection}
+            setBusDirection={setBusDirection}
             setIsRouteOffcanvasShow={setIsRouteOffcanvasShow}
             setSearchOffcanvasShow={setSearchOffcanvasShow}
           />
         </RoutesContainer>
+        <Leaflet polyLine={polyLine} busRoute={busRoute[busDirection] || {}} />
       </MainContainer>
     </>
   );

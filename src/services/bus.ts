@@ -1,6 +1,8 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import Cookies from 'js-cookie';
-import type { IBusStopArriveTime, IBusRoute, IBusRouteDetail } from 'react-app-env';
+import type {
+  IBusStopArriveTime, IBusRoute, IBusRouteDetail, IShapeOfBusRoute,
+} from 'react-app-env';
 
 interface IGetRouteData {
   city: string;
@@ -27,6 +29,9 @@ export const busApi = createApi({
     getBusArriveTimeByRouteUid: builder.query<Array<IBusStopArriveTime>, IGetRouteData>({
       query: ({ city, routeName, routeUid }) => `EstimatedTimeOfArrival/City/${city}/${routeName}?$filter=contains(RouteUID, '${routeUid}')`,
     }),
+    getSharpOfBusRouteByRouteUid: builder.query<Array<IShapeOfBusRoute>, IGetRouteData>({
+      query: ({ city, routeName, routeUid }) => `Shape/City/${city}/${routeName}?$filter=contains(RouteUID, '${routeUid}')`,
+    }),
   }),
 });
 
@@ -35,4 +40,5 @@ export const {
   useLazyGetRoutesByCityQuery,
   useLazyGetRouteByRouteUidQuery,
   useLazyGetBusArriveTimeByRouteUidQuery,
+  useLazyGetSharpOfBusRouteByRouteUidQuery,
 } = busApi;

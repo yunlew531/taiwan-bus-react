@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import styled from '@emotion/styled';
 import type {
-  IEstimate, IBusRoute, IBusStopArriveTime, ThemeProps, IBusRouteDetail,
+  IEstimate, IBusRoute, IBusStopArriveTime, ThemeProps, IBusRouteDetail, IShapeOfBusRoute,
 } from 'react-app-env';
 import translateCity from 'utils/translateCity';
-import { useLazyGetBusArriveTimeByRouteUidQuery, useLazyGetRouteByRouteUidQuery } from 'services/bus';
+import { useLazyGetBusArriveTimeByRouteUidQuery, useLazyGetRouteByRouteUidQuery, useLazyGetSharpOfBusRouteByRouteUidQuery } from 'services/bus';
 import { setRouteInOffcanvas } from 'slices/busRoutesSlice';
 import { useAppDispatch } from 'hooks';
 
@@ -72,6 +72,7 @@ const BusList: React.FC<IBusList> = ({
   const dispatch = useAppDispatch();
   const [getRouteByUidTrigger, { isError }] = useLazyGetRouteByRouteUidQuery();
   const [getBusArriveTimesTrigger] = useLazyGetBusArriveTimeByRouteUidQuery();
+  const [getSharpOfBusRouteTrigger] = useLazyGetSharpOfBusRouteByRouteUidQuery();
 
   const sortBusStopArriveTimesByDirection = (busStops: Array<IBusStopArriveTime>) => busStops
     .reduce((prev, busStop) => {
@@ -106,37 +107,62 @@ const BusList: React.FC<IBusList> = ({
       routesWithBusArriveTime[1] = {
         ...routesData[1],
         Stops: routesData[1].Stops.map((stop) => (
-          { ...stop, Estimates: directionReturn[stop.StopUID] })),
+          { ...stop, Estimates: directionReturn[stop.StopUID] || [[]] })),
       };
     }
-    console.log(1, routesWithBusArriveTime);
 
     return routesWithBusArriveTime;
   };
 
+  const handleShapeOfBusRoute = (shapeData: IShapeOfBusRoute) => {
+
+  };
+
   const handleOffcanvas = async (route: IBusRoute) => {
+    if (route.City === 'Kaohsiung') {
+      alert(`
+        政府 TDX API 資料服務尚未提供高雄查詢！
+        推測可能是資料正從 PTX 轉移至 TDX 緣故。
+      `);
+      return;
+    }
     setIsRouteOffcanvasShow(true);
     setSearchOffcanvasShow(false);
     try {
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      const { City, RouteName: { Zh_tw }, RouteUID } = route;
-      const reqData = { city: City, routeName: Zh_tw, routeUid: RouteUID };
-      const [{ data: routeData = [] }, { data: busArriveTimesData = [] }] = await Promise.all(
-        [getRouteByUidTrigger(reqData), getBusArriveTimesTrigger(reqData)],
+      const { City: city, RouteName: { Zh_tw: routeName }, RouteUID: routeUid } = route;
+      const reqData = { city, routeName, routeUid };
+      const [
+        { data: routeData = [] },
+        { data: busArriveTimesData = [] },
+        { data: shapeOfBusRoute = [] },
+      ] = await Promise.all(
+        [
+          getRouteByUidTrigger(reqData),
+          getBusArriveTimesTrigger(reqData),
+          getSharpOfBusRouteTrigger(reqData),
+        ],
       );
+
+      // TODO: test data ------
+      // const busArriveTimesData = await fetch(
+      //   `${process.env.PUBLIC_URL}/json/Taoyuan_route_106.json`,
+      // )
+      //   .then((res) => res.json() as Promise<Array<IBusStopArriveTime>>);
+
+      // const routeData = await fetch(`${process.env.PUBLIC_URL}/json/Taoyuan_routes.json`)
+      //   .then((res) => res.json() as Promise<Array<IBusRouteDetail>>);
+      // TODO:  ------
+      // handleShapeOfBusRoute(shapeOfBusRoute);
+
       const busStopArriveTimes = sortBusStopArriveTimesByDirection(busArriveTimesData);
       const routesWithBusArriveTime = mergeBusStopAndArriveTime(routeData, busStopArriveTimes);
 
       dispatch(setRouteInOffcanvas(routesWithBusArriveTime));
-    } catch (error) {
-      console.error(error);
-    }
+    } catch (error) { console.error(error); }
   };
 
   useEffect(() => {
-    if (isError) {
-      console.warn('getRouteByUidTrigger error');
-    }
+    if (isError) { console.warn('getRouteByUidTrigger error'); }
   }, [isError]);
 
   return (

@@ -225,17 +225,20 @@ const BusPlate = styled.p<ThemeProps>`
 
 interface IRoutesOffcanvasProps {
   show: boolean;
+  busDirection: 0 | 1;
+  setBusDirection: React.Dispatch<React.SetStateAction<0 | 1>>
   setIsRouteOffcanvasShow: React.Dispatch<React.SetStateAction<boolean>>;
   setSearchOffcanvasShow: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
   show,
+  busDirection,
+  setBusDirection,
   setIsRouteOffcanvasShow,
   setSearchOffcanvasShow,
 }) => {
   const busRoute = useAppSelector((state) => state.busRoutes.currentRouteInOffcanvas);
-  const [busDirection, setBusDirection] = useState<0 | 1>(0);
 
   const handleOffcanvas = () => {
     setIsRouteOffcanvasShow(false);
@@ -243,11 +246,10 @@ const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
   };
 
   const handleBusStationStatus = (estimates: Array<IEstimate>) => {
-    console.log(estimates[0]);
-
     const { EstimateTime } = estimates[0];
+    const threeMinutes = 180;
     if (EstimateTime === undefined) return '過站';
-    if (EstimateTime <= 180) return '進站中';
+    if (EstimateTime <= threeMinutes) return '進站中';
     return '稍後進站';
   };
 
