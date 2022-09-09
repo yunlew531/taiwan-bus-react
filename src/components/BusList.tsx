@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
 import styled from '@emotion/styled';
 import type {
-  IEstimate, IBusRoute, IBusStopArriveTime, ThemeProps, IBusRouteDetail, IShapeOfBusRoute,
+  IEstimate, IBusRoute, IBusStopArriveTime, ThemeProps, IBusRouteDetail, IShapeOfBusRouteRes,
+  ShapeOfBusRoute,
 } from 'react-app-env';
 import translateCity from 'utils/translateCity';
 import { useLazyGetBusArriveTimeByRouteUidQuery, useLazyGetRouteByRouteUidQuery, useLazyGetSharpOfBusRouteByRouteUidQuery } from 'services/bus';
-import { setRouteInOffcanvas } from 'slices/busRoutesSlice';
+import { setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
 import { useAppDispatch } from 'hooks';
 
 const BusListStyle = styled.ul<{ height: string | undefined }>`
@@ -114,8 +115,14 @@ const BusList: React.FC<IBusList> = ({
     return routesWithBusArriveTime;
   };
 
-  const handleShapeOfBusRoute = (shapeData: IShapeOfBusRoute) => {
+  type LatLonStrArray = [Array<string>, Array<string>];
 
+  const handleShapeOfBusRouteStrToArr = (shapeData: Array<IShapeOfBusRouteRes>) => {
+    const latLonStrArray = (shapeData.map((shape) => shape.Geometry.split('LINESTRING(')[1].split(')')[0].split(',')) as LatLonStrArray);
+    const latLonArray = (latLonStrArray.map((latLonStrs) => latLonStrs
+      .map((latLonStr) => latLonStr.split(' ').reverse().map((latLon) => Number(latLon)))) as ShapeOfBusRoute);
+
+    return latLonArray;
   };
 
   const handleOffcanvas = async (route: IBusRoute) => {
@@ -152,12 +159,13 @@ const BusList: React.FC<IBusList> = ({
       // const routeData = await fetch(`${process.env.PUBLIC_URL}/json/Taoyuan_routes.json`)
       //   .then((res) => res.json() as Promise<Array<IBusRouteDetail>>);
       // TODO:  ------
-      // handleShapeOfBusRoute(shapeOfBusRoute);
 
+      const busRouteShapeLatLon = handleShapeOfBusRouteStrToArr(shapeOfBusRoute);
       const busStopArriveTimes = sortBusStopArriveTimesByDirection(busArriveTimesData);
       const routesWithBusArriveTime = mergeBusStopAndArriveTime(routeData, busStopArriveTimes);
 
       dispatch(setRouteInOffcanvas(routesWithBusArriveTime));
+      dispatch(setShapeOfBusRoute(busRouteShapeLatLon));
     } catch (error) { console.error(error); }
   };
 

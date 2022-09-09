@@ -106,7 +106,7 @@ interface IAccessToken {
   expires_in: number;
 }
 
-interface IShapeOfBusRoute {
+interface IShapeOfBusRouteRes {
   RouteUID: string;
   RouteID: string;
   RouteName: {
@@ -125,3 +125,5 @@ interface IShapeOfBusRoute {
   UpdateTime: string;
   VersionID: number;
 }
+
+type ShapeOfBusRoute = [Array<[number, number]>?, Array<[number, number]>?];

@@ -1,18 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
 import L from 'leaflet';
-import type { IBusRoute, IBusRouteDetail, PositionLatLon } from 'react-app-env';
+import type { IBusRouteDetail, ShapeOfBusRoute } from 'react-app-env';
 
 const Map = styled.div`
   width: 100%;
 `;
 
 interface LeafletProps {
-  polyLine: Array<PositionLatLon>;
-  busRoute: IBusRouteDetail
+  busRoute: IBusRouteDetail;
+  shapeOfBusRoute: ShapeOfBusRoute[0];
 }
 
-const Leaflet: React.FC<LeafletProps> = ({ polyLine, busRoute }) => {
+const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef<L.Map>();
 
@@ -44,13 +44,13 @@ const Leaflet: React.FC<LeafletProps> = ({ polyLine, busRoute }) => {
   }, []);
 
   useEffect(() => {
-    if (polyLine?.length && mapInstanceRef.current) {
-      const bounds = [polyLine[0], polyLine[polyLine.length - 1]];
+    if (shapeOfBusRoute?.length && mapInstanceRef.current) {
+      const bounds = [shapeOfBusRoute[0], shapeOfBusRoute[shapeOfBusRoute.length - 1]];
 
-      L.polyline(polyLine).addTo(mapInstanceRef.current);
+      L.polyline(shapeOfBusRoute).addTo(mapInstanceRef.current);
       mapInstanceRef.current.fitBounds(bounds);
     }
-  }, [polyLine]);
+  }, [shapeOfBusRoute]);
 
   useEffect(() => {
     const { Stops: stops } = busRoute;

@@ -93,6 +93,7 @@ const Bus: React.FC = () => {
   const [getRoutesTrigger] = useLazyGetRoutesByCityQuery();
   const busRoutes = useAppSelector((state) => state.busRoutes.busRoutes);
   const busRoute = useAppSelector((state) => state.busRoutes.currentRouteInOffcanvas);
+  const shapeOfBusRoute = useAppSelector((state) => state.busRoutes.shapeOfBusRoute);
   const [searchValue, setSearchValue] = useState('');
   const [busDirection, setBusDirection] = useState<0 | 1>(0);
 
@@ -117,17 +118,6 @@ const Bus: React.FC = () => {
       dispatch(setBusRoutes([]));
     };
   }, []);
-
-  const [polyLine, setPolyLine] = useState<Array<PositionLatLon>>([]);
-
-  useEffect(() => {
-    const polyLineArr: Array<PositionLatLon> = busRoute[0]?.Stops.map((station) => {
-      const { PositionLat, PositionLon } = station.StopPosition;
-      return [PositionLat, PositionLon];
-    });
-
-    setPolyLine(polyLineArr);
-  }, [busRoute]);
 
   const busRoutesFilter = useMemo(
     () => (searchValue ? busRoutes.filter(
@@ -180,7 +170,10 @@ const Bus: React.FC = () => {
             setSearchOffcanvasShow={setSearchOffcanvasShow}
           />
         </RoutesContainer>
-        <Leaflet polyLine={polyLine} busRoute={busRoute[busDirection] || {}} />
+        <Leaflet
+          busRoute={busRoute[busDirection] || {}}
+          shapeOfBusRoute={shapeOfBusRoute[busDirection] || []}
+        />
       </MainContainer>
     </>
   );

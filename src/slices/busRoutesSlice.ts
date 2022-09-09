@@ -1,10 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { IBusRoute, IBusRouteDetail } from 'react-app-env';
+import type { IBusRoute, IBusRouteDetail, ShapeOfBusRoute } from 'react-app-env';
 
 const initialState = {
   busRoutes: [] as Array<IBusRoute>,
   currentRouteInOffcanvas: [] as Array<IBusRouteDetail>,
+  shapeOfBusRoute: [] as ShapeOfBusRoute,
 };
 
 export const busRoutesSlice = createSlice({
@@ -19,9 +20,14 @@ export const busRoutesSlice = createSlice({
       state.currentRouteInOffcanvas = payload;
     },
     clearRouteInOffcanvas: (state) => { state.currentRouteInOffcanvas = []; },
+    setShapeOfBusRoute: (state, { payload }: PayloadAction<ShapeOfBusRoute>) => {
+      state.shapeOfBusRoute = payload;
+    },
   },
 });
 
-export const { setBusRoutes, setRouteInOffcanvas, clearRouteInOffcanvas } = busRoutesSlice.actions;
+export const {
+  setBusRoutes, setRouteInOffcanvas, clearRouteInOffcanvas, setShapeOfBusRoute,
+} = busRoutesSlice.actions;
 
 export default busRoutesSlice.reducer;
