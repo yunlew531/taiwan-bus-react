@@ -3,6 +3,7 @@ import styled from '@emotion/styled';
 import type { ThemeProps, StationStatus, IEstimate } from 'react-app-env';
 import TimeBadge from 'components/TimeBadge';
 import { useAppSelector } from 'hooks';
+import { useSearchParams } from 'react-router-dom';
 
 const RoutePanel = styled.div<ThemeProps & { show: boolean }>`
   position: absolute;
@@ -227,23 +228,15 @@ interface IRoutesOffcanvasProps {
   show: boolean;
   busDirection: 0 | 1;
   setBusDirection: React.Dispatch<React.SetStateAction<0 | 1>>
-  setIsRouteOffcanvasShow: React.Dispatch<React.SetStateAction<boolean>>;
-  setSearchOffcanvasShow: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
   show,
   busDirection,
   setBusDirection,
-  setIsRouteOffcanvasShow,
-  setSearchOffcanvasShow,
 }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const busRoute = useAppSelector((state) => state.busRoutes.currentRouteInOffcanvas);
-
-  const handleOffcanvas = () => {
-    setIsRouteOffcanvasShow(false);
-    setSearchOffcanvasShow(true);
-  };
 
   const handleBusStationStatus = (estimates: Array<IEstimate>) => {
     const { EstimateTime } = estimates[0];
@@ -267,7 +260,7 @@ const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
     <RoutePanel show={show}>
       <RouteDescContainer>
         <RouteDescContainerHeader>
-          <BackToSearchBtn type="button" onClick={handleOffcanvas}>
+          <BackToSearchBtn type="button" onClick={() => { setSearchParams({}); }}>
             <span className="material-icons-outlined">chevron_left</span>
             <p>返回搜尋</p>
           </BackToSearchBtn>

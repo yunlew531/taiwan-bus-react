@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
 import L from 'leaflet';
 import type { IBusRouteDetail, ShapeOfBusRoute } from 'react-app-env';
+import { useAppDispatch } from 'hooks';
+import { setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
 
 const Map = styled.div`
   width: 100%;
@@ -15,6 +17,7 @@ interface LeafletProps {
 const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef<L.Map>();
+  const dispatch = useAppDispatch();
 
   const redIcon = new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -43,7 +46,12 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
     };
 
     createMap();
-    return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); } };
+
+    return () => {
+      dispatch(setRouteInOffcanvas([]));
+      dispatch(setShapeOfBusRoute([]));
+      if (mapInstanceRef.current) { mapInstanceRef.current.remove(); }
+    };
   }, []);
 
   const routeShapeLine = useRef<L.Polyline>();
@@ -58,14 +66,8 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
 
     const renderRouteShapeLine = () => {
       if (shapeOfBusRoute?.length && mapInstanceRef.current) {
-        const firstLatLon = shapeOfBusRoute[0];
-        const middleIdx = Math.ceil(shapeOfBusRoute.length / 2);
-        const middleLatLon = shapeOfBusRoute[middleIdx];
-        const lastLatLon = shapeOfBusRoute[shapeOfBusRoute.length - 1];
-        const bounds = [firstLatLon, middleLatLon, lastLatLon];
-
         routeShapeLine.current = L.polyline(shapeOfBusRoute).addTo(mapInstanceRef.current);
-        mapInstanceRef.current.fitBounds(bounds);
+        mapInstanceRef.current.fitBounds(shapeOfBusRoute);
       }
     };
 
