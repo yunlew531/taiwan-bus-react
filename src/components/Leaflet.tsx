@@ -46,7 +46,16 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
     return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); } };
   }, []);
 
+  const routeShapeLine = useRef<L.Polyline>();
+
   useEffect(() => {
+    const removeRouteShapeLine = () => {
+      if (routeShapeLine.current === undefined) return;
+      mapInstanceRef.current?.removeLayer(routeShapeLine.current);
+    };
+
+    removeRouteShapeLine();
+
     const renderRouteShapeLine = () => {
       if (shapeOfBusRoute?.length && mapInstanceRef.current) {
         const firstLatLon = shapeOfBusRoute[0];
@@ -55,7 +64,7 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
         const lastLatLon = shapeOfBusRoute[shapeOfBusRoute.length - 1];
         const bounds = [firstLatLon, middleLatLon, lastLatLon];
 
-        L.polyline(shapeOfBusRoute).addTo(mapInstanceRef.current);
+        routeShapeLine.current = L.polyline(shapeOfBusRoute).addTo(mapInstanceRef.current);
         mapInstanceRef.current.fitBounds(bounds);
       }
     };
