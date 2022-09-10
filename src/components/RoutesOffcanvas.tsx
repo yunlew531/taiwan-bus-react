@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import type { ThemeProps, StationStatus, IEstimate } from 'react-app-env';
 import TimeBadge from 'components/TimeBadge';
-import { useAppSelector } from 'hooks';
+import { useAppDispatch, useAppSelector } from 'hooks';
+import { useSearchParams } from 'react-router-dom';
+import { setBusRoutes, setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
 
 const RoutePanel = styled.div<ThemeProps & { show: boolean }>`
   position: absolute;
@@ -227,23 +229,16 @@ interface IRoutesOffcanvasProps {
   show: boolean;
   busDirection: 0 | 1;
   setBusDirection: React.Dispatch<React.SetStateAction<0 | 1>>
-  setIsRouteOffcanvasShow: React.Dispatch<React.SetStateAction<boolean>>;
-  setSearchOffcanvasShow: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
   show,
   busDirection,
   setBusDirection,
-  setIsRouteOffcanvasShow,
-  setSearchOffcanvasShow,
 }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const busRoute = useAppSelector((state) => state.busRoutes.currentRouteInOffcanvas);
-
-  const handleOffcanvas = () => {
-    setIsRouteOffcanvasShow(false);
-    setSearchOffcanvasShow(true);
-  };
+  const dispatch = useAppDispatch();
 
   const handleBusStationStatus = (estimates: Array<IEstimate>) => {
     const { EstimateTime } = estimates[0];
@@ -263,11 +258,17 @@ const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
     return `${Math.round(EstimateTime / 60)} 分`;
   };
 
+  const handleBackBtnClick = () => {
+    setSearchParams({});
+    dispatch(setShapeOfBusRoute([]));
+    dispatch(setRouteInOffcanvas([]));
+  };
+
   return (
     <RoutePanel show={show}>
       <RouteDescContainer>
         <RouteDescContainerHeader>
-          <BackToSearchBtn type="button" onClick={handleOffcanvas}>
+          <BackToSearchBtn type="button" onClick={handleBackBtnClick}>
             <span className="material-icons-outlined">chevron_left</span>
             <p>返回搜尋</p>
           </BackToSearchBtn>

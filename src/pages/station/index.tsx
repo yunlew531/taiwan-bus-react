@@ -79,7 +79,7 @@ const Station: React.FC = () => {
                 )}
               </StationList>
             </SearchGroup>
-            {/* <BusList routes={[]} height="650" /> */}
+            {/* <BusList routes={[]} /> */}
           </StationSearchPanel>
           {/* <RoutesOffcanvas show={false} /> */}
         </StationsContainer>

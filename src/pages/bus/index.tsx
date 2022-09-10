@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 import React, { useEffect, useMemo, useState } from 'react';
-import type { PositionLatLon, ThemeProps } from 'react-app-env';
-import { useParams } from 'react-router-dom';
+import type { ThemeProps } from 'react-app-env';
+import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import Breadcrumb from 'components/Breadcrumb';
 import BusList from 'components/BusList';
 import Search from 'components/Search';
@@ -40,6 +40,7 @@ const BusSearchPanel = styled.div<ThemeProps & { show: boolean }>`
 `;
 
 const BusListPanel = styled.div<ThemeProps>`
+  height: calc(100% - 341px);
   padding: 20px;
 `;
 
@@ -89,6 +90,8 @@ const DedicatedBtn = styled(NumberBtn)<ThemeProps>`
 
 const Bus: React.FC = () => {
   const { city: cityParams } = useParams();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const [getRoutesTrigger] = useLazyGetRoutesByCityQuery();
   const busRoutes = useAppSelector((state) => state.busRoutes.busRoutes);
@@ -119,6 +122,23 @@ const Bus: React.FC = () => {
     };
   }, []);
 
+  const [isRouteOffcanvasOpen, setIsRouteOffcanvasShow] = useState(false);
+  const [isSearchOffcanvasOpen, setSearchOffcanvasShow] = useState(true);
+
+  useEffect(() => {
+    const routeName = searchParams.get('route_name');
+    const routeUid = searchParams.get('route_uid');
+    const city = searchParams.get('city');
+    if (routeName && routeUid && city) {
+      if (city === 'Kaohsiung') return;
+      setIsRouteOffcanvasShow(true);
+      setSearchOffcanvasShow(false);
+    } else {
+      setIsRouteOffcanvasShow(false);
+      setSearchOffcanvasShow(true);
+    }
+  }, [location]);
+
   const busRoutesFilter = useMemo(
     () => (searchValue ? busRoutes.filter(
       (route) => route.RouteName.Zh_tw.match(searchValue),
@@ -135,9 +155,6 @@ const Bus: React.FC = () => {
     setSearchValue((prev) => `${prev}${clickNum}`);
   };
 
-  const [isRouteOffcanvasOpen, setIsRouteOffcanvasShow] = useState(false);
-  const [isSearchOffcanvasOpen, setSearchOffcanvasShow] = useState(true);
-
   return (
     <>
       <Breadcrumb title={chineseCity} copy timeTable />
@@ -148,9 +165,6 @@ const Bus: React.FC = () => {
               <Search value={searchValue} setValue={setSearchValue} placeholder="輸入公車路線 / 起迄方向名或關鍵字" />
               <BusList
                 routes={busRoutesFilter}
-                setIsRouteOffcanvasShow={setIsRouteOffcanvasShow}
-                setSearchOffcanvasShow={setSearchOffcanvasShow}
-                height="400"
               />
             </BusListPanel>
             <NumberBoard>
@@ -166,13 +180,11 @@ const Bus: React.FC = () => {
             show={isRouteOffcanvasOpen}
             busDirection={busDirection}
             setBusDirection={setBusDirection}
-            setIsRouteOffcanvasShow={setIsRouteOffcanvasShow}
-            setSearchOffcanvasShow={setSearchOffcanvasShow}
           />
         </RoutesContainer>
         <Leaflet
           busRoute={busRoute[busDirection] || {}}
-          shapeOfBusRoute={shapeOfBusRoute[busDirection] || []}
+          shapeOfBusRoute={shapeOfBusRoute[busDirection] || shapeOfBusRoute[0] || []}
         />
       </MainContainer>
     </>

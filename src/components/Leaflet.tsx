@@ -2,6 +2,9 @@ import React, { useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
 import L from 'leaflet';
 import type { IBusRouteDetail, ShapeOfBusRoute } from 'react-app-env';
+import { useAppDispatch } from 'hooks';
+import { setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
+import { useSearchParams, useLocation } from 'react-router-dom';
 
 const Map = styled.div`
   width: 100%;
@@ -13,6 +16,9 @@ interface LeafletProps {
 }
 
 const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
+  const dispatch = useAppDispatch();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const mapRef = useRef(null);
   const mapInstanceRef = useRef<L.Map>();
 
@@ -28,22 +34,20 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
   useEffect(() => {
     const createMap = () => {
       mapInstanceRef.current = L.map(mapRef.current as unknown as HTMLDivElement)
-        .setView([25.0480075, 121.5170613], 16);
+        .setView([23.931034, 120.959473], 7);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(mapInstanceRef.current);
-
-      const taipeiStationMarker = L.marker([25.0480075, 121.5170613], {
-        draggable: true,
-        icon: redIcon,
-      }).bindPopup('hello').addTo(mapInstanceRef.current);
-
-      taipeiStationMarker.openPopup();
     };
 
     createMap();
-    return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); } };
+
+    return () => {
+      dispatch(setRouteInOffcanvas([]));
+      dispatch(setShapeOfBusRoute([]));
+      if (mapInstanceRef.current) { mapInstanceRef.current.remove(); }
+    };
   }, []);
 
   const routeShapeLine = useRef<L.Polyline>();
@@ -58,14 +62,8 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
 
     const renderRouteShapeLine = () => {
       if (shapeOfBusRoute?.length && mapInstanceRef.current) {
-        const firstLatLon = shapeOfBusRoute[0];
-        const middleIdx = Math.ceil(shapeOfBusRoute.length / 2);
-        const middleLatLon = shapeOfBusRoute[middleIdx];
-        const lastLatLon = shapeOfBusRoute[shapeOfBusRoute.length - 1];
-        const bounds = [firstLatLon, middleLatLon, lastLatLon];
-
         routeShapeLine.current = L.polyline(shapeOfBusRoute).addTo(mapInstanceRef.current);
-        mapInstanceRef.current.fitBounds(bounds);
+        mapInstanceRef.current.fitBounds(shapeOfBusRoute);
       }
     };
 
@@ -106,6 +104,20 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
 
     renderMarkers();
   }, [busRoute]);
+
+  useEffect(() => {
+    const handleView = () => {
+      const routeUid = searchParams.get('route_uid');
+      const routeName = searchParams.get('route_name');
+      const city = searchParams.get('city');
+
+      if (routeUid || routeName || city) return;
+
+      mapInstanceRef.current?.setView([23.931034, 120.959473], 7);
+    };
+
+    handleView();
+  }, [location]);
 
   return <Map ref={mapRef} />;
 };
