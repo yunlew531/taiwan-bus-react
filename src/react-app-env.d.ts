@@ -127,3 +127,9 @@ interface IShapeOfBusRouteRes {
 }
 
 type ShapeOfBusRoute = [Array<[number, number]>?, Array<[number, number]>?];
+
+interface IGetRouteData {
+  city: string;
+  routeName: string;
+  routeUid: string;
+}

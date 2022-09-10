@@ -1,13 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
 import type {
   IEstimate, IBusRoute, IBusStopArriveTime, ThemeProps, IBusRouteDetail, IShapeOfBusRouteRes,
-  ShapeOfBusRoute,
+  ShapeOfBusRoute, IGetRouteData,
 } from 'react-app-env';
 import translateCity from 'utils/translateCity';
 import { useLazyGetBusArriveTimeByRouteUidQuery, useLazyGetRouteByRouteUidQuery, useLazyGetSharpOfBusRouteByRouteUidQuery } from 'services/bus';
 import { setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
 import { useAppDispatch } from 'hooks';
+import {
+  useNavigate, useLocation, useParams, useSearchParams,
+} from 'react-router-dom';
 
 const BusListStyle = styled.ul<{ height: string | undefined }>`
   height: ${({ height }) => (height ? `${height}px` : 'auto')};
@@ -71,6 +74,10 @@ const BusList: React.FC<IBusList> = ({
   routes, height, setIsRouteOffcanvasShow, setSearchOffcanvasShow,
 }) => {
   const dispatch = useAppDispatch();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = useParams();
+  const [searchParams] = useSearchParams();
   const [getRouteByUidTrigger, { isError }] = useLazyGetRouteByRouteUidQuery();
   const [getBusArriveTimesTrigger] = useLazyGetBusArriveTimeByRouteUidQuery();
   const [getSharpOfBusRouteTrigger] = useLazyGetSharpOfBusRouteByRouteUidQuery();
@@ -125,7 +132,7 @@ const BusList: React.FC<IBusList> = ({
     return latLonArray;
   };
 
-  const handleOffcanvas = async (route: IBusRoute) => {
+  const handleOffcanvas = (route: IBusRoute) => {
     if (route.City === 'Kaohsiung') {
       alert(`
         政府 TDX API 資料服務尚未提供高雄查詢！
@@ -135,48 +142,69 @@ const BusList: React.FC<IBusList> = ({
     }
     setIsRouteOffcanvasShow(true);
     setSearchOffcanvasShow(false);
-    try {
-      const { City: city, RouteName: { Zh_tw: routeName }, RouteUID: routeUid } = route;
-      const reqData = { city, routeName, routeUid };
-      const [
-        { data: routeData = [] },
-        { data: busArriveTimesData = [] },
-        { data: shapeOfBusRoute = [] },
-      ] = await Promise.all(
-        [
-          getRouteByUidTrigger(reqData),
-          getBusArriveTimesTrigger(reqData),
-          getSharpOfBusRouteTrigger(reqData),
-        ],
-      );
 
-      // TODO: test data ------
-      // const busArriveTimesData = await fetch(
-      //   `${process.env.PUBLIC_URL}/json/Taoyuan_route_106.json`,
-      // )
-      //   .then((res) => res.json() as Promise<Array<IBusStopArriveTime>>);
+    // TODO: test data ------
+    // const busArriveTimesData = await fetch(
+    //   `${process.env.PUBLIC_URL}/json/Taoyuan_route_106.json`,
+    // )
+    //   .then((res) => res.json() as Promise<Array<IBusStopArriveTime>>);
 
-      // const routeData = await fetch(`${process.env.PUBLIC_URL}/json/Taoyuan_routes.json`)
-      //   .then((res) => res.json() as Promise<Array<IBusRouteDetail>>);
-      // TODO:  ------
-
-      const busRouteShapeLatLon = handleShapeOfBusRouteStrToArr(shapeOfBusRoute);
-      const busStopArriveTimes = sortBusStopArriveTimesByDirection(busArriveTimesData);
-      const routesWithBusArriveTime = mergeBusStopAndArriveTime(routeData, busStopArriveTimes);
-
-      dispatch(setRouteInOffcanvas(routesWithBusArriveTime));
-      dispatch(setShapeOfBusRoute(busRouteShapeLatLon));
-    } catch (error) { console.error(error); }
+    // const routeData = await fetch(`${process.env.PUBLIC_URL}/json/Taoyuan_routes.json`)
+    //   .then((res) => res.json() as Promise<Array<IBusRouteDetail>>);
+    // TODO:  ------
   };
 
   useEffect(() => {
     if (isError) { console.warn('getRouteByUidTrigger error'); }
   }, [isError]);
 
+  useEffect(() => {
+    const routeUid = searchParams.get('route_uid');
+    const routeName = searchParams.get('route_name');
+
+    const getBusRouteData = async () => {
+      if (params.city === undefined) return;
+      if (routeName === null || routeUid === null) return;
+      const reqData: IGetRouteData = {
+        city: params.city,
+        routeName,
+        routeUid,
+      };
+
+      try {
+        const [
+          { data: routeData = [] },
+          { data: busArriveTimesData = [] },
+          { data: shapeOfBusRoute = [] },
+        ] = await Promise.all(
+          [
+            getRouteByUidTrigger(reqData),
+            getBusArriveTimesTrigger(reqData),
+            getSharpOfBusRouteTrigger(reqData),
+          ],
+        );
+        const busRouteShapeLatLon = handleShapeOfBusRouteStrToArr(shapeOfBusRoute);
+        const busStopArriveTimes = sortBusStopArriveTimesByDirection(busArriveTimesData);
+        const routesWithBusArriveTime = mergeBusStopAndArriveTime(routeData, busStopArriveTimes);
+
+        dispatch(setRouteInOffcanvas(routesWithBusArriveTime));
+        dispatch(setShapeOfBusRoute(busRouteShapeLatLon));
+      } catch (error) { console.error(error); }
+    };
+
+    getBusRouteData().catch(() => {});
+  }, [location]);
+
   return (
     <BusListStyle height={height}>
       {routes.map((route) => (
-        <BusItem key={route.RouteUID} onClick={() => { handleOffcanvas(route).catch(() => {}); }}>
+        <BusItem
+          key={route.RouteUID}
+          onClick={() => {
+            navigate({ search: `?route_name=${route.RouteName.Zh_tw}&route_uid=${route.RouteUID}` });
+            handleOffcanvas(route);
+          }}
+        >
           <div>
             <p className="route-num">{route.RouteName.Zh_tw}</p>
             <p className="route-name">{route.DepartureStopNameZh} - {route.DestinationStopNameZh}</p>

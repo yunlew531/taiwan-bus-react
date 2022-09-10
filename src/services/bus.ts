@@ -1,14 +1,8 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import Cookies from 'js-cookie';
 import type {
-  IBusStopArriveTime, IBusRoute, IBusRouteDetail, IShapeOfBusRouteRes,
+  IBusStopArriveTime, IBusRoute, IBusRouteDetail, IShapeOfBusRouteRes, IGetRouteData,
 } from 'react-app-env';
-
-interface IGetRouteData {
-  city: string;
-  routeName: string;
-  routeUid: string;
-}
 
 export const busApi = createApi({
   reducerPath: 'busApi',

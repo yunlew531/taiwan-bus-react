@@ -26,49 +26,76 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
   });
 
   useEffect(() => {
-    mapInstanceRef.current = L.map(mapRef.current as unknown as HTMLDivElement)
-      .setView([25.0480075, 121.5170613], 16);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(mapInstanceRef.current);
+    const createMap = () => {
+      mapInstanceRef.current = L.map(mapRef.current as unknown as HTMLDivElement)
+        .setView([25.0480075, 121.5170613], 16);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(mapInstanceRef.current);
 
-    const taipeiStationMarker = L.marker([25.0480075, 121.5170613], {
-      draggable: true,
-      icon: redIcon,
-    }).bindPopup('hello').addTo(mapInstanceRef.current);
+      const taipeiStationMarker = L.marker([25.0480075, 121.5170613], {
+        draggable: true,
+        icon: redIcon,
+      }).bindPopup('hello').addTo(mapInstanceRef.current);
 
-    taipeiStationMarker.openPopup();
+      taipeiStationMarker.openPopup();
+    };
 
+    createMap();
     return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); } };
   }, []);
 
   useEffect(() => {
-    if (shapeOfBusRoute?.length && mapInstanceRef.current) {
-      const bounds = [shapeOfBusRoute[0], shapeOfBusRoute[shapeOfBusRoute.length - 1]];
+    const renderRouteShapeLine = () => {
+      if (shapeOfBusRoute?.length && mapInstanceRef.current) {
+        const firstLatLon = shapeOfBusRoute[0];
+        const middleIdx = Math.ceil(shapeOfBusRoute.length / 2);
+        const middleLatLon = shapeOfBusRoute[middleIdx];
+        const lastLatLon = shapeOfBusRoute[shapeOfBusRoute.length - 1];
+        const bounds = [firstLatLon, middleLatLon, lastLatLon];
 
-      L.polyline(shapeOfBusRoute).addTo(mapInstanceRef.current);
-      mapInstanceRef.current.fitBounds(bounds);
-    }
+        L.polyline(shapeOfBusRoute).addTo(mapInstanceRef.current);
+        mapInstanceRef.current.fitBounds(bounds);
+      }
+    };
+
+    renderRouteShapeLine();
   }, [shapeOfBusRoute]);
 
+  const markers = useRef<Array<L.Marker>>([]);
+
   useEffect(() => {
-    const { Stops: stops } = busRoute;
+    const removeMarkers = () => {
+      markers.current.forEach((markerInstance) => {
+        mapInstanceRef.current?.removeLayer(markerInstance);
+      });
+      markers.current = [];
+    };
 
-    stops?.forEach((stop) => {
-      const { PositionLat, PositionLon } = stop.StopPosition;
-      const { Zh_tw: stopName } = stop.StopName;
+    removeMarkers();
 
-      if (mapInstanceRef.current) {
-        L.marker([PositionLat, PositionLon], {
-          draggable: false,
-          icon: redIcon,
-        }).bindTooltip(stopName, {
-          permanent: true,
-          direction: 'right',
-        }).addTo(mapInstanceRef.current);
-      }
-    });
+    const renderMarkers = () => {
+      const { Stops: stops } = busRoute;
+
+      stops?.forEach((stop) => {
+        const { PositionLat, PositionLon } = stop.StopPosition;
+        const { Zh_tw: stopName } = stop.StopName;
+
+        if (mapInstanceRef.current) {
+          const marker = L.marker([PositionLat, PositionLon], {
+            draggable: false,
+            icon: redIcon,
+          }).bindTooltip(stopName, {
+            permanent: true,
+            direction: 'right',
+          }).addTo(mapInstanceRef.current);
+          markers.current.push(marker);
+        }
+      });
+    };
+
+    renderMarkers();
   }, [busRoute]);
 
   return <Map ref={mapRef} />;
