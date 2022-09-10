@@ -1,0 +1,104 @@
+.marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 100%;
+  border: 2px solid white;
+}
+
+.blue-marker {
+  background-color: #355F8B;
+}
+
+.pink-marker {
+  background-color: #D08181;
+}
+
+.gray-marker {
+  background-color: #888888;
+}
+
+.leaflet-popup-content-wrapper {
+  position: relative;
+  color: white;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.leaflet-popup-content {
+  margin: 8px;
+}
+
+.leaflet-popup-tip-container {
+  overflow: visible;
+  transform: translateY(2px);
+  filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+.leaflet-popup-content {
+  p {
+    margin: 0;
+  }
+}
+
+.leaflet-popup-tip {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.leaflet-popup-close-button {
+  display: none;
+}
+
+.stop-popup-container {
+  position: relative;
+  min-width: 78px;
+  text-align: center;
+  color: white;
+  border: 2px solid white;
+  border-radius: 15px;
+  padding: 8px;
+  filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.15));
+  &::before {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    width: 15px;
+    height: 15px;
+    transform: translateX(-50%) translateY(50%) rotate(45deg);
+    border-bottom: 2px solid white;
+    border-right: 2px solid white;
+  }
+  &.bg-pink {
+    background-color: #D08181;
+    &::before {
+      background-color: #D08181;
+    }
+  }
+  &.bg-blue {
+    background-color: #355F8B;
+    &::before {
+      background-color: #355F8B;
+    }
+  }
+  &.bg-gray {
+    background-color: #888888;
+    &::before {
+      background-color: #888888;
+    }
+  }
+}
+
+.stop-popup-name {
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+.stop-popup-status {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.material-icons-outlined.bus-icon {
+  font-size: 25px;
+}

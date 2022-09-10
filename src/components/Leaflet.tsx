@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import L from 'leaflet';
 import type { IBusRouteDetail, ShapeOfBusRoute } from 'react-app-env';
@@ -6,8 +6,56 @@ import { useAppDispatch } from 'hooks';
 import { setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
 import { useSearchParams, useLocation } from 'react-router-dom';
 
-const Map = styled.div`
+const Wrap = styled.div`
+  position: relative;
   width: 100%;
+`;
+
+const Map = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+`;
+
+const PopupOpenBtnContainer = styled.div`
+  position: absolute;
+  display: flex;
+  align-items: center;
+  top: 26px;
+  right: 23px;
+  padding: 12px 14px;
+  font-size: 12px;
+  background-color: #fff;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  z-index: 1;
+`;
+
+const PopupOpenBtnDecor = styled.div<{ isStopPopupShow: boolean }>`
+  position: relative;
+  width: 24px;
+  height: 14px;
+  background: ${({ isStopPopupShow }) => (isStopPopupShow ? 'rgb(53, 95, 139, 0.6)' : 'rgb(53, 95, 139, 0.24)')};
+  border-radius: 34px;
+  margin-left: 17px;
+  transition: transform 0.1s;
+  &:hover {
+    transform: scale(1.03);
+  }
+`;
+
+const PopupOpenBtn = styled.button<{ isStopPopupShow: boolean }>`
+  position: absolute;
+  top: 50%;
+  left: ${({ isStopPopupShow }) => (isStopPopupShow ? '100%' : '0%')};
+  transform: translateX(-50%) translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: #355F8B;
+  box-shadow: 0px 1px 2px rgba(48, 79, 254, 0.54);
+  border-radius: 20px;
 `;
 
 interface LeafletProps {
@@ -21,15 +69,24 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
   const location = useLocation();
   const mapRef = useRef(null);
   const mapInstanceRef = useRef<L.Map>();
+  const [isStopPopupShow, setIsStopPopupShow] = useState(true);
 
-  const redIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
+  const pinkIcon = new L.DivIcon({
+    className: 'marker pink-marker',
+    popupAnchor: [0, 5],
   });
+
+  const blueIcon = new L.DivIcon({
+    className: 'marker blue-marker',
+    popupAnchor: [0, 5],
+  });
+
+  const grayIcon = new L.DivIcon({
+    className: 'marker gray-marker',
+    popupAnchor: [0, 5],
+  });
+
+  const toggleStopPopupShow = () => { setIsStopPopupShow(!isStopPopupShow); };
 
   useEffect(() => {
     const createMap = () => {
@@ -70,34 +127,65 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
     renderRouteShapeLine();
   }, [shapeOfBusRoute]);
 
-  const markers = useRef<Array<L.Marker>>([]);
+  const markersRef = useRef<Array<L.Marker>>([]);
 
   useEffect(() => {
     const removeMarkers = () => {
-      markers.current.forEach((markerInstance) => {
+      markersRef.current.forEach((markerInstance) => {
         mapInstanceRef.current?.removeLayer(markerInstance);
       });
-      markers.current = [];
+      markersRef.current = [];
     };
 
     removeMarkers();
+
+    const oneMinute = 60;
+    const threeMinutes = 180;
+    const handleStopEstimate = (estimate: number) => {
+      if (estimate === undefined) return '尚未發車';
+      if (estimate <= oneMinute) return '進站中';
+      if (estimate <= threeMinutes) return '即將進站';
+      return `${Math.round(estimate / 60)} 分`;
+    };
+
+    const handleStopPopupStyle = (estimate: number) => {
+      if (estimate === undefined) return 'bg-gray';
+      if (estimate <= threeMinutes) return 'bg-pink';
+      return 'bg-blue';
+    };
+
+    const handleStopMarkerStyle = (estimate: number) => {
+      if (estimate === undefined) return grayIcon;
+      if (estimate <= threeMinutes) return pinkIcon;
+      return blueIcon;
+    };
 
     const renderMarkers = () => {
       const { Stops: stops } = busRoute;
 
       stops?.forEach((stop) => {
+        const { EstimateTime } = stop.Estimates[0];
         const { PositionLat, PositionLon } = stop.StopPosition;
         const { Zh_tw: stopName } = stop.StopName;
 
         if (mapInstanceRef.current) {
           const marker = L.marker([PositionLat, PositionLon], {
             draggable: false,
-            icon: redIcon,
-          }).bindTooltip(stopName, {
-            permanent: true,
-            direction: 'right',
-          }).addTo(mapInstanceRef.current);
-          markers.current.push(marker);
+            icon: handleStopMarkerStyle(EstimateTime),
+          })
+            .bindPopup(`
+              <div class="stop-popup-container ${handleStopPopupStyle(EstimateTime)}">
+                ${EstimateTime <= threeMinutes ? '<span class="material-icons-outlined bus-icon">directions_bus</span>' : ''}
+                <p class="stop-popup-name">${stopName}</p>
+                <p class="stop-popup-status">${handleStopEstimate(EstimateTime)}</p>
+              </div>
+            `, { closeOnClick: false, autoClose: false })
+            .addTo(mapInstanceRef.current);
+          markersRef.current.push(marker);
+
+          if (isStopPopupShow) {
+            marker.openPopup();
+          }
         }
       });
     };
@@ -119,7 +207,33 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
     handleView();
   }, [location]);
 
-  return <Map ref={mapRef} />;
+  useEffect(() => {
+    const closePopup = () => {
+      markersRef.current.forEach((marker) => {
+        marker.closePopup();
+      });
+    };
+    const openPopup = () => {
+      markersRef.current.forEach((marker) => {
+        marker.openPopup();
+      });
+    };
+
+    if (isStopPopupShow) openPopup();
+    else closePopup();
+  }, [isStopPopupShow]);
+
+  return (
+    <Wrap>
+      <PopupOpenBtnContainer>
+        <span>顯示站牌資訊</span>
+        <PopupOpenBtnDecor onClick={toggleStopPopupShow} isStopPopupShow={isStopPopupShow}>
+          <PopupOpenBtn type="button" isStopPopupShow={isStopPopupShow} />
+        </PopupOpenBtnDecor>
+      </PopupOpenBtnContainer>
+      <Map ref={mapRef} />
+    </Wrap>
+  );
 };
 
 export default Leaflet;
