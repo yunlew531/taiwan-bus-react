@@ -97,6 +97,7 @@ const Bus: React.FC = () => {
   const busRoutes = useAppSelector((state) => state.busRoutes.busRoutes);
   const busRoute = useAppSelector((state) => state.busRoutes.currentRouteInOffcanvas);
   const shapeOfBusRoute = useAppSelector((state) => state.busRoutes.shapeOfBusRoute);
+  const busNearStop = useAppSelector((state) => state.busRoutes.busNearStop);
   const [searchValue, setSearchValue] = useState('');
   const [busDirection, setBusDirection] = useState<0 | 1>(0);
 
@@ -185,6 +186,7 @@ const Bus: React.FC = () => {
         <Leaflet
           busRoute={busRoute[busDirection] || {}}
           shapeOfBusRoute={shapeOfBusRoute[busDirection] || shapeOfBusRoute[0] || []}
+          busNearStop={busNearStop[busDirection] || []}
         />
       </MainContainer>
     </>

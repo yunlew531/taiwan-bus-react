@@ -2,11 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
 import type {
   IEstimate, IBusRoute, IBusStopArriveTime, ThemeProps, IBusRouteDetail, IShapeOfBusRouteRes,
-  ShapeOfBusRoute, IGetRouteData,
+  ShapeOfBusRoute, IGetRouteData, IBusNearStop, BusNearStop,
 } from 'react-app-env';
 import translateCity from 'utils/translateCity';
-import { useLazyGetBusArriveTimeByRouteUidQuery, useLazyGetRouteByRouteUidQuery, useLazyGetSharpOfBusRouteByRouteUidQuery } from 'services/bus';
-import { setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
+import {
+  useLazyGetBusArriveTimeByRouteUidQuery, useLazyGetRouteByRouteUidQuery,
+  useLazyGetSharpOfBusRouteByRouteUidQuery, useLazyGetBusNearStopQuery,
+} from 'services/bus';
+import { setBusNearStop, setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
 import { useAppDispatch } from 'hooks';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 
@@ -73,6 +76,7 @@ const BusList: React.FC<IBusList> = ({ routes }) => {
   const [getRouteByUidTrigger, { isError }] = useLazyGetRouteByRouteUidQuery();
   const [getBusArriveTimesTrigger] = useLazyGetBusArriveTimeByRouteUidQuery();
   const [getSharpOfBusRouteTrigger] = useLazyGetSharpOfBusRouteByRouteUidQuery();
+  const [getBusNearStopTrigger] = useLazyGetBusNearStopQuery();
 
   const sortBusStopArriveTimesByDirection = (busStops: Array<IBusStopArriveTime>) => busStops
     .reduce((prev, busStop) => {
@@ -116,7 +120,7 @@ const BusList: React.FC<IBusList> = ({ routes }) => {
 
   type LatLonStrArray = [Array<string>, Array<string>];
 
-  const handleShapeOfBusRouteStrToArr = (shapeData: Array<IShapeOfBusRouteRes>) => {
+  const formatShapeOfBusRouteStrToArr = (shapeData: Array<IShapeOfBusRouteRes>) => {
     const latLonStrArray = shapeData.map((shape) => {
       const str = params.city === 'Taipei&NewTaipei' ? ' ' : '';
 
@@ -126,6 +130,16 @@ const BusList: React.FC<IBusList> = ({ routes }) => {
       .map((latLonStr) => latLonStr.split(' ').reverse().map((latLon) => Number(latLon)))) as ShapeOfBusRoute);
 
     return latLonArray;
+  };
+
+  const formatBusNearStop = (busNearStops: Array<IBusNearStop>) => {
+    const result = busNearStops.reduce((prev, busNearStop) => {
+      if (busNearStop.Direction === 0) prev[0].push(busNearStop);
+      else if (busNearStop.Direction === 1) prev[1].push(busNearStop);
+      return prev;
+    }, [[], []] as BusNearStop);
+
+    return result;
   };
 
   useEffect(() => {
@@ -159,19 +173,23 @@ const BusList: React.FC<IBusList> = ({ routes }) => {
           { data: routeData = [] },
           { data: busArriveTimesData = [] },
           { data: shapeOfBusRoute = [] },
+          { data: busNearStopData = [] },
         ] = await Promise.all(
           [
             getRouteByUidTrigger(reqData),
             getBusArriveTimesTrigger(reqData),
             getSharpOfBusRouteTrigger(reqData),
+            getBusNearStopTrigger(reqData),
           ],
         );
-        const busRouteShapeLatLon = handleShapeOfBusRouteStrToArr(shapeOfBusRoute);
+        const busRouteShapeLatLon = formatShapeOfBusRouteStrToArr(shapeOfBusRoute);
         const busStopArriveTimes = sortBusStopArriveTimesByDirection(busArriveTimesData);
         const routesWithBusArriveTime = mergeBusStopAndArriveTime(routeData, busStopArriveTimes);
+        const busNearStop = formatBusNearStop(busNearStopData);
 
         dispatch(setRouteInOffcanvas(routesWithBusArriveTime));
         dispatch(setShapeOfBusRoute(busRouteShapeLatLon));
+        dispatch(setBusNearStop(busNearStop));
       } catch (error) { console.error(error); }
     };
 

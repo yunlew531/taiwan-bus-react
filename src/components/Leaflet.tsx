@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import L from 'leaflet';
-import type { IBusRouteDetail, ShapeOfBusRoute } from 'react-app-env';
+import type {
+  IBusNearStop, IBusRouteDetail, ShapeOfBusRoute,
+} from 'react-app-env';
 import { useAppDispatch } from 'hooks';
 import { setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
 import { useSearchParams, useLocation } from 'react-router-dom';
@@ -56,14 +58,16 @@ const PopupOpenBtn = styled.button<{ isStopPopupShow: boolean }>`
   background: #355F8B;
   box-shadow: 0px 1px 2px rgba(48, 79, 254, 0.54);
   border-radius: 20px;
+  transition: left 0.2s linear;
 `;
 
 interface LeafletProps {
   busRoute: IBusRouteDetail;
   shapeOfBusRoute: ShapeOfBusRoute[0];
+  busNearStop: Array<IBusNearStop>;
 }
 
-const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
+const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute, busNearStop }) => {
   const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -84,6 +88,11 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
   const grayIcon = new L.DivIcon({
     className: 'marker gray-marker',
     popupAnchor: [0, 5],
+  });
+
+  const busIcon = new L.DivIcon({
+    className: 'bus-icon-container',
+    html: '<div class="bus-icon-bg"><span class="material-icons-outlined bus-icon">directions_bus</span><div>',
   });
 
   const toggleStopPopupShow = () => { setIsStopPopupShow(!isStopPopupShow); };
@@ -115,8 +124,6 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
       mapInstanceRef.current?.removeLayer(routeShapeLine.current);
     };
 
-    removeRouteShapeLine();
-
     const renderRouteShapeLine = () => {
       if (shapeOfBusRoute?.length && mapInstanceRef.current) {
         routeShapeLine.current = L.polyline(shapeOfBusRoute).addTo(mapInstanceRef.current);
@@ -124,6 +131,7 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
       }
     };
 
+    removeRouteShapeLine();
     renderRouteShapeLine();
   }, [shapeOfBusRoute]);
 
@@ -136,8 +144,6 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
       });
       markersRef.current = [];
     };
-
-    removeMarkers();
 
     const oneMinute = 60;
     const threeMinutes = 180;
@@ -190,8 +196,34 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute }) => {
       });
     };
 
+    removeMarkers();
     renderMarkers();
   }, [busRoute]);
+
+  const busMarkers = useRef<Array<L.Marker>>([]);
+
+  useEffect(() => {
+    const renderBusMarkers = () => {
+      busMarkers.current = busNearStop.map((bus) => {
+        const { StopPosition } = busRoute.Stops.filter((stop) => stop.StopUID === bus.StopUID)[0];
+        const { PositionLat, PositionLon } = StopPosition;
+        return new L.Marker([PositionLat, PositionLon], {
+          icon: busIcon,
+          draggable: false,
+        }).addTo(mapInstanceRef.current as L.Map);
+      });
+    };
+
+    const removeBusMarkers = () => {
+      busMarkers.current.forEach((marker) => {
+        mapInstanceRef.current?.removeLayer(marker);
+      });
+      busMarkers.current = [];
+    };
+
+    removeBusMarkers();
+    renderBusMarkers();
+  }, [busNearStop]);
 
   useEffect(() => {
     const handleView = () => {

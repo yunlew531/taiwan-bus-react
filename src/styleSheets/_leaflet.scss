@@ -102,3 +102,20 @@
 .material-icons-outlined.bus-icon {
   font-size: 25px;
 }
+
+.bus-icon-container {
+  .bus-icon-bg {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 35px;
+    height: 35px;
+    background-color: #D08181;
+    border: 2px solid #fff;
+    border-radius: 100%;
+    .material-icons-outlined.bus-icon {
+      color: #fff;
+      font-size: 20px;
+    }
+  }
+}

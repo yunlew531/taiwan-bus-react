@@ -128,8 +128,40 @@ interface IShapeOfBusRouteRes {
 
 type ShapeOfBusRoute = [Array<[number, number]>?, Array<[number, number]>?];
 
+type BusNearStop = [Array<IBusNearStop>, Array<IBusNearStop>];
+
 interface IGetRouteData {
   city: string;
   routeName: string;
   routeUid: string;
+}
+
+interface IBusNearStop {
+  PlateNumb: string;
+  OperatorID: number;
+  RouteUID: string;
+  RouteID: string;
+  RouteName: {
+    Zh_tw: string;
+    En: string;
+  },
+  SubRouteUID: string;
+  SubRouteID: string;
+  SubRouteName: {
+    Zh_tw: string;
+    En: string;
+  },
+  Direction: number;
+  StopUID: string;
+  StopID: string;
+  StopName: {
+    Zh_tw: string;
+    En: string;
+  },
+  StopSequence: number;
+  DutyStatus: number;
+  BusStatus: number;
+  GPSTime: string;
+  SrcUpdateTime: string;
+  UpdateTime: string;
 }
