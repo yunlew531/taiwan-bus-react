@@ -1,17 +1,21 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import styled from '@emotion/styled';
 import type {
   IEstimate, IBusRoute, IBusStopArriveTime, ThemeProps, IBusRouteDetail, IShapeOfBusRouteRes,
-  ShapeOfBusRoute, IGetRouteData, IBusNearStop, BusNearStop,
+  ShapeOfBusRoute, IGetRouteData, IBusNearStop, BusNearStop, IFavoRoutes,
 } from 'react-app-env';
 import translateCity from 'utils/translateCity';
 import {
   useLazyGetBusArriveTimeByRouteUidQuery, useLazyGetRouteByRouteUidQuery,
   useLazyGetSharpOfBusRouteByRouteUidQuery, useLazyGetBusNearStopQuery,
 } from 'services/bus';
-import { setBusNearStop, setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
-import { useAppDispatch } from 'hooks';
+import {
+  setBusNearStop, setBusRoutes, setFavoRoutes, setRouteInOffcanvas, setShapeOfBusRoute,
+} from 'slices/busRoutesSlice';
+import { useAppDispatch, useAppSelector } from 'hooks';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
+import mergeFavoRoutesInBusRoutes from 'utils/mergeFavoRoutesInBusRoutes';
+import mergeFavoRouteInBusRouteDetail from 'utils/mergeFavoRouteInBusRouteDetail';
 
 const BusListStyle = styled.ul`
   height: 100%;
@@ -44,19 +48,16 @@ const BusItem = styled.li<ThemeProps>`
   .material-icons-outlined.favorite {
     font-size: 20px;
     margin-bottom: 5px;
-    cursor: pointer;
-    transition: transform 0.1s linear;
-    &:hover {
-      transform: scale(1.03);
-    }
-    &:active {
-      transform: scale(0.98);
-    }
   }
   .cityName {
     color: ${({ theme: { colors: { gray_600 } } }) => gray_600};
     font-size: ${({ theme: { fontSizes: { fs_4 } } }) => fs_4};
   }
+`;
+
+const AddFavoBtn = styled.button`
+  border: none;
+  background-color: transparent;
 `;
 
 interface IBusList {
@@ -77,6 +78,8 @@ const BusList: React.FC<IBusList> = ({ routes }) => {
   const [getBusArriveTimesTrigger] = useLazyGetBusArriveTimeByRouteUidQuery();
   const [getSharpOfBusRouteTrigger] = useLazyGetSharpOfBusRouteByRouteUidQuery();
   const [getBusNearStopTrigger] = useLazyGetBusNearStopQuery();
+  const busRoutes = useAppSelector((state) => state.busRoutes.busRoutes);
+  const favoRoutes = useAppSelector((state) => state.busRoutes.favoRoutes);
 
   const sortBusStopArriveTimesByDirection = (busStops: Array<IBusStopArriveTime>) => busStops
     .reduce((prev, busStop) => {
@@ -134,17 +137,71 @@ const BusList: React.FC<IBusList> = ({ routes }) => {
 
   const formatBusNearStop = (busNearStops: Array<IBusNearStop>) => {
     const result = busNearStops.reduce((prev, busNearStop) => {
-      if (busNearStop.Direction === 0) prev[0].push(busNearStop);
-      else if (busNearStop.Direction === 1) prev[1].push(busNearStop);
+      if (busNearStop.Direction === 0) prev[0]?.push(busNearStop);
+      else if (busNearStop.Direction === 1) prev[1]?.push(busNearStop);
       return prev;
     }, [[], []] as BusNearStop);
 
     return result;
   };
 
+  const toggleRouteFavo = (busRoute: IBusRoute) => {
+    const {
+      City, RouteUID, RouteName: { Zh_tw: zhName, En: engName }, DepartureStopNameZh,
+      DestinationStopNameZh, isFavorite,
+    } = busRoute;
+
+    let updatedFavoData: IFavoRoutes;
+    if (!isFavorite) {
+      const routeData = {
+        city: City,
+        zhCity: translateCity(City),
+        departureStop: DepartureStopNameZh,
+        destinationStop: DestinationStopNameZh,
+        zhName,
+        engName,
+        routeUid: RouteUID,
+      };
+
+      updatedFavoData = { ...favoRoutes, [RouteUID]: routeData };
+    } else {
+      updatedFavoData = { ...favoRoutes, [RouteUID]: null };
+    }
+    localStorage.setItem('favoRoutes', JSON.stringify(updatedFavoData));
+    dispatch(setFavoRoutes(updatedFavoData));
+  };
+
+  const handleBusItemClick = (route: IBusRoute) => {
+    const {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      RouteName: { Zh_tw: route_name, En: engName }, RouteUID: route_uid, City: city,
+      DepartureStopNameZh, DestinationStopNameZh,
+    } = route;
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+    const favo_data = {
+      city,
+      zhCity: translateCity(city),
+      departureStop: DepartureStopNameZh,
+      destinationStop: DestinationStopNameZh,
+      zhName: route_name,
+      engName,
+      routeUid: route_uid,
+    };
+    setSearchParams({
+      city, route_name, route_uid, favo_data: JSON.stringify(favo_data),
+    });
+  };
+
   useEffect(() => {
-    if (isError) { console.warn('getRouteByUidTrigger error'); }
-  }, [isError]);
+    const updateBusRoutes = () => {
+      let busRoutesData = [...busRoutes];
+      busRoutesData = mergeFavoRoutesInBusRoutes(favoRoutes, busRoutesData);
+
+      dispatch(setBusRoutes(busRoutesData));
+    };
+
+    updateBusRoutes();
+  }, [favoRoutes]);
 
   useEffect(() => {
     const getBusRouteData = async () => {
@@ -185,9 +242,10 @@ const BusList: React.FC<IBusList> = ({ routes }) => {
         const busRouteShapeLatLon = formatShapeOfBusRouteStrToArr(shapeOfBusRoute);
         const busStopArriveTimes = sortBusStopArriveTimesByDirection(busArriveTimesData);
         const routesWithBusArriveTime = mergeBusStopAndArriveTime(routeData, busStopArriveTimes);
+        const routeDetailData = mergeFavoRouteInBusRouteDetail(favoRoutes, routesWithBusArriveTime);
         const busNearStop = formatBusNearStop(busNearStopData);
 
-        dispatch(setRouteInOffcanvas(routesWithBusArriveTime));
+        dispatch(setRouteInOffcanvas(routeDetailData));
         dispatch(setShapeOfBusRoute(busRouteShapeLatLon));
         dispatch(setBusNearStop(busNearStop));
       } catch (error) { console.error(error); }
@@ -201,19 +259,23 @@ const BusList: React.FC<IBusList> = ({ routes }) => {
       {routes.map((route) => (
         <BusItem
           key={route.RouteUID}
-          onClick={() => {
-            // eslint-disable-next-line @typescript-eslint/naming-convention
-            const { RouteName: { Zh_tw: route_name }, RouteUID: route_uid, City: city } = route;
-            setSearchParams({ city, route_name, route_uid });
-          }}
+          onClick={() => handleBusItemClick(route)}
         >
           <div>
             <p className="route-num">{route.RouteName.Zh_tw}</p>
             <p className="route-name">{route.DepartureStopNameZh} - {route.DestinationStopNameZh}</p>
           </div>
           <div>
-            <span className="material-icons-outlined favorite">favorite_border</span>
-            {/* <span className="material-icons-outlined favorite">favorite</span> */}
+            <AddFavoBtn
+              type="button"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                toggleRouteFavo(route);
+              }}
+            >
+              {route.isFavorite ? <span className="material-icons-outlined favorite">favorite</span>
+                : <span className="material-icons-outlined favorite">favorite_border</span>}
+            </AddFavoBtn>
             <p className="cityName">{translateCity(route.City)}</p>
           </div>
         </BusItem>

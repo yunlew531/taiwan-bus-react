@@ -18,3 +18,15 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.material-icons-outlined.favorite {
+  color: #D08181;
+  cursor: pointer;
+  transition: transform 0.1s linear;
+  &:hover {
+    transform: scale(1.03);
+  }
+  &:active {
+    transform: scale(0.98);
+  }
+}

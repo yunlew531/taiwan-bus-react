@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import Breadcrumb from 'components/Breadcrumb';
-import type { ThemeProps } from 'react-app-env';
+import type { IFavoRoute, ThemeProps } from 'react-app-env';
+import { useAppDispatch, useAppSelector } from 'hooks';
+import { useNavigate } from 'react-router-dom';
+import { setFavoRoutes } from 'slices/busRoutesSlice';
 
 const MainContainer = styled.div<ThemeProps>`
   position: absolute;
@@ -126,6 +129,11 @@ const FavoriteGroup = styled.div<ThemeProps>`
   }
 `;
 
+const AddFavoBtn = styled.button`
+  border: none;
+  background-color: transparent;
+`;
+
 const BusStationList = styled.ul<{ show: boolean }>`
   display: ${({ show }) => (show ? 'block' : 'none')};
   max-height: 530px;
@@ -138,6 +146,10 @@ const BusStationItem = styled.li<ThemeProps>`
   justify-content: space-between;
   border-bottom: 1px solid ${({ theme: { colors: { gray_400 } } }) => gray_400};
   padding: 12px 5px;
+  transition: filter 0.1s linear;
+  &:hover {
+    filter: brightness(0.7);
+  }
   .bus-number {
     display: inline-block;
     font-weight: 700;
@@ -155,6 +167,43 @@ const BusStationItem = styled.li<ThemeProps>`
 `;
 
 const Favorite: React.FC = () => {
+  const favoRoutes = useAppSelector((state) => state.busRoutes.favoRoutes);
+  const [favoRoutesArr, setFavoRoutesArr] = useState<Array<IFavoRoute>>([]);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  const handleFavoItemClick = (routeItem: IFavoRoute) => {
+    const { city, routeUid, zhName } = routeItem;
+    const search = `?city=${city}/&route_uid=${routeUid}&route_name=${zhName}&favo_data=${JSON.stringify(routeItem)}`;
+
+    navigate({
+      pathname: `/bus/${city}`,
+      search,
+    });
+  };
+
+  const removeFavorite = (favoRoute: IFavoRoute) => {
+    const routesData = {
+      ...favoRoutes,
+      [favoRoute.routeUid]: null,
+    };
+    const routesDataStr = JSON.stringify(routesData);
+
+    localStorage.setItem('favoRoutes', routesDataStr);
+    dispatch(setFavoRoutes(routesData));
+  };
+
+  useEffect(() => {
+    const formatFavoRoutesToArr = () => {
+      const values = Object.values(favoRoutes);
+      const favoRoutesData = Object.keys(favoRoutes).map((favoRoute, idx) => values[idx])
+        .filter((route) => route) as Array<IFavoRoute>;
+      setFavoRoutesArr(favoRoutesData);
+    };
+
+    formatFavoRoutesToArr();
+  }, [favoRoutes]);
+
   return (
     <>
       <Breadcrumb title="我的收藏" />
@@ -188,17 +237,30 @@ const Favorite: React.FC = () => {
             </BusStopItem>
           </BusStopList>
           <BusStationList show>
-            <BusStationItem>
-              <div>
-                <span className="bus-number">300</span>
-                <span className="bus-description">往台中車站</span>
-                <p className="bus-station">科博館（專用道）</p>
-              </div>
-              <FavoriteGroup>
-                <span className="material-icons-outlined favorite">favorite</span>
-                <p className="title">台中</p>
-              </FavoriteGroup>
-            </BusStationItem>
+            {favoRoutesArr.map((favoRoute) => (
+              <BusStationItem
+                key={favoRoute.routeUid}
+                onClick={() => handleFavoItemClick(favoRoute)}
+              >
+                <div>
+                  <span className="bus-description">{favoRoute.departureStop} - {favoRoute.destinationStop}</span>
+                  <p className="bus-station">{favoRoute.zhName}</p>
+                </div>
+                <FavoriteGroup>
+                  <AddFavoBtn
+                    type="button"
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                      e.stopPropagation();
+                      removeFavorite(favoRoute);
+                    }}
+                  >
+                    <span className="material-icons-outlined favorite">favorite</span>
+                  </AddFavoBtn>
+                  <p className="title">{favoRoute.zhCity}</p>
+                </FavoriteGroup>
+              </BusStationItem>
+            ))}
+
           </BusStationList>
         </FavoriteContainer>
       </MainContainer>

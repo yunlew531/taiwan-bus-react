@@ -31,6 +31,7 @@ interface IBusRoute {
   City: string;
   CityCode: string;
   UpdateTime: string;
+  isFavorite?: boolean;
 }
 
 type PositionLatLon = [number, number];
@@ -63,6 +64,8 @@ interface IBusRouteDetail {
   }
   Direction: 0 | 1;
   Stops: Array<IStop>;
+  City: string;
+  isFavorite?: boolean;
 }
 
 interface IBusStopArriveTime {
@@ -128,7 +131,7 @@ interface IShapeOfBusRouteRes {
 
 type ShapeOfBusRoute = [Array<[number, number]>?, Array<[number, number]>?];
 
-type BusNearStop = [Array<IBusNearStop>, Array<IBusNearStop>];
+type BusNearStop = [Array<IBusNearStop>?, Array<IBusNearStop>?];
 
 interface IGetRouteData {
   city: string;
@@ -164,4 +167,18 @@ interface IBusNearStop {
   GPSTime: string;
   SrcUpdateTime: string;
   UpdateTime: string;
+}
+
+interface IFavoRoute {
+  zhName: string;
+  engName: string;
+  routeUid: string;
+  city: string;
+  zhCity: string;
+  departureStop: string;
+  destinationStop: string;
+}
+
+interface IFavoRoutes {
+  [key: string]: IFavoRoute | null;
 }

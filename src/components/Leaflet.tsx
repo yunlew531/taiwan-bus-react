@@ -204,13 +204,19 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute, busNearSto
 
   useEffect(() => {
     const renderBusMarkers = () => {
-      busMarkers.current = busNearStop.map((bus) => {
-        const { StopPosition } = busRoute.Stops.filter((stop) => stop.StopUID === bus.StopUID)[0];
+      if (!busRoute.Stops) return;
+
+      busNearStop.forEach((bus) => {
+        const { StopPosition } = busRoute.Stops
+          .filter((stop) => stop.StopUID === bus.StopUID)[0] || {};
+        if (!StopPosition) return;
         const { PositionLat, PositionLon } = StopPosition;
-        return new L.Marker([PositionLat, PositionLon], {
+
+        const marker = new L.Marker([PositionLat, PositionLon], {
           icon: busIcon,
           draggable: false,
         }).addTo(mapInstanceRef.current as L.Map);
+        markersRef.current.push(marker);
       });
     };
 
@@ -230,10 +236,11 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute, busNearSto
       const routeUid = searchParams.get('route_uid');
       const routeName = searchParams.get('route_name');
       const city = searchParams.get('city');
+      const isSearching = routeName && routeUid && city;
 
-      if (routeUid || routeName || city) return;
-
-      mapInstanceRef.current?.setView([23.931034, 120.959473], 7);
+      if (!isSearching) {
+        mapInstanceRef.current?.setView([23.931034, 120.959473], 7);
+      }
     };
 
     handleView();

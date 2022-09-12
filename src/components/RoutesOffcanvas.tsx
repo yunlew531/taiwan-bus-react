@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import styled from '@emotion/styled';
-import type { ThemeProps, StationStatus, IEstimate } from 'react-app-env';
+import type {
+  ThemeProps, StationStatus, IEstimate, IBusRouteDetail, IFavoRoutes, IFavoRoute,
+} from 'react-app-env';
 import TimeBadge from 'components/TimeBadge';
 import { useAppDispatch, useAppSelector } from 'hooks';
 import { useSearchParams } from 'react-router-dom';
-import { setBusRoutes, setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
+import {
+  setBusNearStop, setFavoRoutes, setRouteInOffcanvas, setShapeOfBusRoute,
+} from 'slices/busRoutesSlice';
+import mergeFavoRouteInBusRouteDetail from 'utils/mergeFavoRouteInBusRouteDetail';
 
 const RoutePanel = styled.div<ThemeProps & { show: boolean }>`
   position: absolute;
@@ -225,6 +230,11 @@ const BusPlate = styled.p<ThemeProps>`
   color: ${({ theme: { colors: { secondary } } }) => secondary};
 `;
 
+const ToggleFavoBtn = styled.button`
+  border: none;
+  background-color: transparent;
+`;
+
 interface IRoutesOffcanvasProps {
   show: boolean;
   busDirection: 0 | 1;
@@ -239,6 +249,7 @@ const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const busRoute = useAppSelector((state) => state.busRoutes.currentRouteInOffcanvas);
   const dispatch = useAppDispatch();
+  const favoRoutes = useAppSelector((state) => state.busRoutes.favoRoutes);
 
   const handleBusStationStatus = (estimates: Array<IEstimate>) => {
     const { EstimateTime } = estimates[0];
@@ -262,7 +273,42 @@ const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
     setSearchParams({});
     dispatch(setShapeOfBusRoute([]));
     dispatch(setRouteInOffcanvas([]));
+    dispatch(setBusNearStop([]));
   };
+
+  const toggleRouteFavo = (busRouteData: Array<IBusRouteDetail>) => {
+    const {
+      RouteUID, isFavorite,
+    } = busRouteData[0];
+
+    let updatedFavoData: IFavoRoutes;
+    if (!isFavorite) {
+      const isFavoDataInQuery = searchParams.get('favo_data');
+      const favoData = (isFavoDataInQuery
+        ? JSON.parse(isFavoDataInQuery) : null) as IFavoRoute | null;
+      if (favoData === null) {
+        console.error("query favo_data is null! can't add null in favorites.");
+        return;
+      }
+
+      updatedFavoData = { ...favoRoutes, [RouteUID]: favoData };
+    } else {
+      updatedFavoData = { ...favoRoutes, [RouteUID]: null };
+    }
+    localStorage.setItem('favoRoutes', JSON.stringify(updatedFavoData));
+    dispatch(setFavoRoutes(updatedFavoData));
+  };
+
+  useEffect(() => {
+    const updateBusRouteDetail = () => {
+      let busRouteDetail = JSON.parse(JSON.stringify(busRoute)) as Array<IBusRouteDetail>;
+      busRouteDetail = mergeFavoRouteInBusRouteDetail(favoRoutes, busRouteDetail);
+
+      dispatch(setRouteInOffcanvas(busRouteDetail));
+    };
+
+    updateBusRouteDetail();
+  }, [favoRoutes]);
 
   return (
     <RoutePanel show={show}>
@@ -272,8 +318,11 @@ const RoutesOffcanvas: React.FC<IRoutesOffcanvasProps> = ({
             <span className="material-icons-outlined">chevron_left</span>
             <p>返回搜尋</p>
           </BackToSearchBtn>
-          <span className="material-icons-outlined favorite">favorite_border</span>
-          {/* <span className="material-icons-outlined favorite">favorite</span> */}
+          <ToggleFavoBtn type="button" onClick={() => toggleRouteFavo(busRoute)}>
+            {busRoute[0] && busRoute[0].isFavorite
+              ? <span className="material-icons-outlined favorite">favorite</span>
+              : <span className="material-icons-outlined favorite">favorite_border</span>}
+          </ToggleFavoBtn>
         </RouteDescContainerHeader>
         <RouteNum>{busRoute[busDirection]?.RouteName.Zh_tw}</RouteNum>
       </RouteDescContainer>

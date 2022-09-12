@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 import React, { useEffect, useMemo, useState } from 'react';
-import type { ThemeProps } from 'react-app-env';
+import type { IBusRoute, IFavoRoutes, ThemeProps } from 'react-app-env';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import Breadcrumb from 'components/Breadcrumb';
 import BusList from 'components/BusList';
@@ -11,6 +11,7 @@ import { useAppDispatch, useAppSelector } from 'hooks';
 import { setBusRoutes } from 'slices/busRoutesSlice';
 import translateCity from 'utils/translateCity';
 import Leaflet from 'components/Leaflet';
+import mergeFavoRoutesInBusRoutes from 'utils/mergeFavoRoutesInBusRoutes';
 
 const MainContainer = styled.div`
   position: absolute;
@@ -100,21 +101,30 @@ const Bus: React.FC = () => {
   const busNearStop = useAppSelector((state) => state.busRoutes.busNearStop);
   const [searchValue, setSearchValue] = useState('');
   const [busDirection, setBusDirection] = useState<0 | 1>(0);
+  const favoRoutes = useAppSelector((state) => state.busRoutes.favoRoutes);
 
   useEffect(() => {
     const getRoutes = async () => {
       if (!cityParams) return;
       if (cityParams === 'Other_City') return;
-      if (cityParams === 'Taipei&NewTaipei') {
-        const [{ data: taipeiRoutes }, { data: newTaipeiRoutes }] = await Promise.all([getRoutesTrigger('Taipei'), getRoutesTrigger('NewTaipei')]);
-        if (taipeiRoutes?.length && newTaipeiRoutes?.length) {
-          dispatch(setBusRoutes([...taipeiRoutes, ...newTaipeiRoutes]));
+
+      let routesData: Array<IBusRoute>;
+      try {
+        if (cityParams === 'Taipei&NewTaipei') {
+          const [{ data: taipeiRoutes = [] }, { data: newTaipeiRoutes = [] }] = await Promise.all([
+            getRoutesTrigger('Taipei'),
+            getRoutesTrigger('NewTaipei'),
+          ]);
+
+          routesData = [...taipeiRoutes, ...newTaipeiRoutes];
+        } else {
+          const { data = [] } = await getRoutesTrigger(cityParams);
+          routesData = data;
         }
-      } else {
-        getRoutesTrigger(cityParams).then(({ data }) => {
-          if (data?.length) dispatch(setBusRoutes(data));
-        }).catch(() => {});
-      }
+        routesData = mergeFavoRoutesInBusRoutes(favoRoutes, routesData);
+
+        dispatch(setBusRoutes(routesData));
+      } catch (err) { console.error(err); }
     };
     getRoutes().catch(() => {});
 
@@ -127,17 +137,23 @@ const Bus: React.FC = () => {
   const [isSearchOffcanvasOpen, setSearchOffcanvasShow] = useState(true);
 
   useEffect(() => {
-    const routeName = searchParams.get('route_name');
-    const routeUid = searchParams.get('route_uid');
-    const city = searchParams.get('city');
-    if (routeName && routeUid && city) {
-      if (city === 'Kaohsiung') return;
-      setIsRouteOffcanvasShow(true);
-      setSearchOffcanvasShow(false);
-    } else {
-      setIsRouteOffcanvasShow(false);
-      setSearchOffcanvasShow(true);
-    }
+    const handleSearching = () => {
+      const routeName = searchParams.get('route_name');
+      const routeUid = searchParams.get('route_uid');
+      const city = searchParams.get('city');
+      const isSearching = routeName && routeUid && city;
+
+      if (isSearching) {
+        if (city === 'Kaohsiung') return;
+        setIsRouteOffcanvasShow(true);
+        setSearchOffcanvasShow(false);
+      } else {
+        setIsRouteOffcanvasShow(false);
+        setSearchOffcanvasShow(true);
+      }
+    };
+
+    handleSearching();
   }, [location]);
 
   const busRoutesFilter = useMemo(
@@ -170,7 +186,9 @@ const Bus: React.FC = () => {
             </BusListPanel>
             <NumberBoard>
               <NumberBtnsGroup>
-                { Array.from(Array(9).keys()).map((item) => <NumberBtn key={item} onClick={handleNumberBoard} type="button">{item + 1}</NumberBtn>)}
+                { Array.from(Array(9).keys()).map(
+                  (item) => <NumberBtn key={item} onClick={handleNumberBoard} type="button">{item + 1}</NumberBtn>,
+                )}
                 <DedicatedBtn type="button">專用道</DedicatedBtn>
                 <NumberBtn onClick={handleNumberBoard} type="button">0</NumberBtn>
                 <NumberBtn onClick={resetSearch} type="button">清除</NumberBtn>
