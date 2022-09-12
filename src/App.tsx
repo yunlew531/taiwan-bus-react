@@ -45,7 +45,7 @@ const App = () => {
 };
 
 const AppWrapper: React.FC = () => (
-  <BrowserRouter>
+  <BrowserRouter basename={process.env.NODE_ENV === 'production' ? '/taiwan-bus-react' : '/'}>
     <App />
   </BrowserRouter>
 );

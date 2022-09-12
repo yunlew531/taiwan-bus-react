@@ -2,6 +2,7 @@
   "name": "taiwan-bus",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://yunlew531.github.io/taiwan-bus-react",
   "dependencies": {
     "@emotion/react": "^11.10.0",
     "@emotion/styled": "^11.10.0",
@@ -13,6 +14,7 @@
     "@types/node": "^16.11.56",
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
+    "gh-pages": "^4.0.0",
     "js-cookie": "^3.0.1",
     "leaflet": "^1.8.0",
     "material-icons": "^1.11.10",
@@ -28,7 +30,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
     "extends": [
