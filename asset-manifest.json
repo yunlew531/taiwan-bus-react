@@ -1,0 +1,25 @@
+{
+  "files": {
+    "main.css": "/taiwan-bus-react/static/css/main.8d0278b6.css",
+    "main.js": "/taiwan-bus-react/static/js/main.e22c39d2.js",
+    "static/js/787.ac142cf0.chunk.js": "/taiwan-bus-react/static/js/787.ac142cf0.chunk.js",
+    "static/media/material-icons-two-tone.woff": "/taiwan-bus-react/static/media/material-icons-two-tone.3baa5b8f3469222b822d.woff",
+    "static/media/material-icons-two-tone.woff2": "/taiwan-bus-react/static/media/material-icons-two-tone.4ef4218c522f1eb6b5b1.woff2",
+    "static/media/material-icons-round.woff": "/taiwan-bus-react/static/media/material-icons-round.5d681e2edae8c60630db.woff",
+    "static/media/material-icons-outlined.woff": "/taiwan-bus-react/static/media/material-icons-outlined.f882956fd323fd322f31.woff",
+    "static/media/material-icons-round.woff2": "/taiwan-bus-react/static/media/material-icons-round.c380809fd3677d7d6903.woff2",
+    "static/media/material-icons.woff": "/taiwan-bus-react/static/media/material-icons.deddd42fbb54fa443440.woff",
+    "static/media/material-icons-sharp.woff": "/taiwan-bus-react/static/media/material-icons-sharp.3a4004a46a653d4b2166.woff",
+    "static/media/material-icons-outlined.woff2": "/taiwan-bus-react/static/media/material-icons-outlined.6f420cf17cc0d7676fad.woff2",
+    "static/media/material-icons-sharp.woff2": "/taiwan-bus-react/static/media/material-icons-sharp.219aa9140e099e6c72ed.woff2",
+    "static/media/material-icons.woff2": "/taiwan-bus-react/static/media/material-icons.acf7f51653310d9142e6.woff2",
+    "index.html": "/taiwan-bus-react/index.html",
+    "main.8d0278b6.css.map": "/taiwan-bus-react/static/css/main.8d0278b6.css.map",
+    "main.e22c39d2.js.map": "/taiwan-bus-react/static/js/main.e22c39d2.js.map",
+    "787.ac142cf0.chunk.js.map": "/taiwan-bus-react/static/js/787.ac142cf0.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.8d0278b6.css",
+    "static/js/main.e22c39d2.js"
+  ]
+}
