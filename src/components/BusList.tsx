@@ -127,10 +127,11 @@ const BusList: React.FC<IBusList> = ({ routes }) => {
     const latLonStrArray = shapeData.map((shape) => {
       const str = params.city === 'Taipei&NewTaipei' ? ' ' : '';
 
-      return shape.Geometry.split(`LINESTRING${str}(`)[1].split(')')[0].split(',');
+      return shape.Geometry.replace(`LINESTRING${str}`, '').replace('MULTI((', '').split(',');
     }) as LatLonStrArray;
-    const latLonArray = (latLonStrArray.map((latLonStrs) => latLonStrs
-      .map((latLonStr) => latLonStr.split(' ').reverse().map((latLon) => Number(latLon)))) as ShapeOfBusRoute);
+    const latLonArray = latLonStrArray.map((latLonStrs) => latLonStrs
+      .map((latLonStr) => latLonStr.split(' ').filter((str) => str).reverse()
+        .map((latLon) => Number(latLon.replaceAll('(', '').replaceAll(')', ''))))) as ShapeOfBusRoute;
 
     return latLonArray;
   };
