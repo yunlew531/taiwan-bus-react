@@ -2,10 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Breadcrumb from 'components/Breadcrumb';
 import styled from '@emotion/styled';
 import Search from 'components/Search';
-import type { ICityCounty, IStation, ThemeProps } from 'react-app-env';
-import BusList from 'components/BusList';
+import type {
+  IBusRoute, ICityCounty, IStation, IStopInStation, ThemeProps,
+} from 'react-app-env';
 import RoutesOffcanvas from 'components/RoutesOffcanvas';
-import { useLazyGetStationsQuery } from 'services/bus';
+import { useLazyGetRoutesByCityQuery, useLazyGetStationsQuery } from 'services/bus';
+import translateCity from 'utils/translateCity';
+import { useNavigate } from 'react-router-dom';
+import { useAppSelector, useAppDispatch } from 'hooks';
+import { setFavoStops } from 'slices/busRoutesSlice';
 
 const MainContainer = styled.div`
   position: absolute;
@@ -152,21 +157,105 @@ const StationItemAddress = styled.p<ThemeProps>`
   font-size: ${({ theme: { fontSizes: { fs_5 } } }) => fs_5};
 `;
 
+const StopsList = styled.ul`
+  height: calc(100% - 118px);
+  overflow-y: auto;
+  padding: 0 15px;
+  margin-top: 36px;
+`;
+
+const StopItem = styled.li<ThemeProps>`
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid ${({ theme: { colors: { gray_400 } } }) => gray_400};
+  text-align: center;
+  transition: filter 0.1s linear;
+  &:hover {
+    filter: brightness(0.7);
+  }
+  .route-num {
+    font-size: ${({ theme: { fontSizes: { fs_1 } } }) => fs_1};
+    font-weight: 700;
+    margin-bottom: 5px;
+    text-align: left;
+  }
+  .route-name {
+    color: ${({ theme: { colors: { gray_600 } } }) => gray_600};
+    font-size: ${({ theme: { fontSizes: { fs_4 } } }) => fs_4};
+    text-align: left;
+  }
+  .material-icons-outlined.favorite {
+    font-size: 20px;
+    margin-bottom: 5px;
+  }
+  .cityName {
+    color: ${({ theme: { colors: { gray_600 } } }) => gray_600};
+    font-size: ${({ theme: { fontSizes: { fs_4 } } }) => fs_4};
+  }
+`;
+
+const AddFavoBtn = styled.button`
+  border: none;
+  background-color: transparent;
+`;
+
 const Station: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
   const [busDirection, setBusDirection] = useState<0 | 1>(0);
   const [cityCounty, setCityCounty] = useState<Array<ICityCounty>>([]);
-  const [citySelected, setCitySelected] = useState('臺北市');
+  const [citySelected, setCitySelected] = useState({ zh: '臺北市', en: 'Taipei' });
   const [isCityListShow, setIsCityListShow] = useState(false);
   const [isStationListShow, setIsStationListShow] = useState(false);
+  const [currentStation, setCurrentStation] = useState({} as IStation);
+  const [
+    currentStationWithRouteAndFavo,
+    setCurrentStationWithRouteAndFavo,
+  ] = useState({} as IStation);
+  const [busRoutes, setBusRoutes] = useState<Array<IBusRoute>>([]);
   const [getStationsTrigger, { data: stations }] = useLazyGetStationsQuery();
-  const [currentStation, setCurrentStation] = useState<IStation>();
+  const [getRoutesTrigger, { data: routesData }] = useLazyGetRoutesByCityQuery();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const favoStops = useAppSelector((state) => state.busRoutes.favoStops);
 
   const fetchCityCounty = () => {
     fetch(`${process.env.PUBLIC_URL}/json/CityCountyData.json`)
       .then((res) => res.json() as Promise<Array<ICityCounty>>)
       .then((cityData) => { setCityCounty(cityData); })
       .catch(() => {});
+  };
+
+  const toggleStopFavo = (stop: IStopInStation) => {
+    const favoStopsData = { ...favoStops };
+    const {
+      RouteUID, RouteName: { Zh_tw: routeName }, DestinationStopNameZh = '', DepartureStopNameZh,
+      StopName: { Zh_tw: stopName } = {}, StopUID,
+    } = stop;
+
+    const localStop = {
+      routeName,
+      stopName: stopName!,
+      routeUid: RouteUID,
+      stopUid: StopUID!,
+      destinationStop: DestinationStopNameZh,
+      departureStop: DepartureStopNameZh!,
+      city: citySelected.en,
+      zhCity: citySelected.zh,
+      position: currentStation.StationPosition,
+    };
+    const isStopFavo = favoStopsData[RouteUID];
+
+    if (!isStopFavo) {
+      favoStopsData[RouteUID] = localStop;
+    } else {
+      favoStopsData[RouteUID] = null;
+    }
+
+    const localStopStr = JSON.stringify(favoStopsData);
+
+    localStorage.setItem('favoStops', localStopStr);
+    dispatch(setFavoStops(favoStopsData));
   };
 
   const computeStationsMatchSearch = useMemo(
@@ -178,8 +267,52 @@ const Station: React.FC = () => {
 
   useEffect(() => {
     fetchCityCounty();
-    getStationsTrigger({ city: 'NewTaipei' }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const getRoutes = () => {
+      getRoutesTrigger(citySelected.en).catch(() => {});
+      getStationsTrigger({ city: citySelected.en }).catch(() => {});
+    };
+
+    getRoutes();
+  }, [citySelected]);
+
+  const mergeStationWithRoute = (stops: Array<IStopInStation>) => {
+    const mergeData: Array<IStopInStation> = [];
+    routesData?.forEach((routeData) => {
+      stops.forEach((stop) => {
+        if (routeData.RouteUID === stop.RouteUID) {
+          mergeData.push({
+            ...stop,
+            DepartureStopNameZh: routeData.DepartureStopNameZh,
+            DestinationStopNameZh: routeData.DestinationStopNameZh,
+          });
+        }
+      });
+    });
+
+    return mergeData;
+  };
+
+  const mergeStopWithFavorite = (stops: Array<IStopInStation>) => stops.map((stop) => {
+    if (favoStops[stop.RouteUID]) stop.isFavorite = true;
+
+    return stop;
+  });
+
+  useEffect(() => {
+    const stopsWithRoute = mergeStationWithRoute(currentStation.Stops);
+    const stopsWithFavorite = mergeStopWithFavorite(stopsWithRoute);
+    setCurrentStationWithRouteAndFavo({
+      ...currentStation,
+      Stops: stopsWithFavorite,
+    });
+  }, [currentStation, favoStops]);
+
+  useEffect(() => {
+    if (routesData) { setBusRoutes(routesData); }
+  }, [routesData]);
 
   return (
     <>
@@ -189,7 +322,7 @@ const Station: React.FC = () => {
           <StationSearchPanel show>
             <CityListGroup>
               <CityListSelectedBtn onClick={() => { setIsCityListShow(!isCityListShow); }}>
-                <p>{citySelected}</p>
+                <p>{citySelected.zh}</p>
                 <span className="material-icons-outlined expend-more">expand_more</span>
               </CityListSelectedBtn>
               <CityList show={isCityListShow}>
@@ -198,8 +331,9 @@ const Station: React.FC = () => {
                     <CityListItem
                       key={city.CityName}
                       onClick={() => {
-                        setCitySelected(city.CityName);
+                        setCitySelected({ zh: city.CityName, en: translateCity(city.CityName, 'en') });
                         setIsCityListShow(false);
+                        setSearchValue('');
                       }}
                     >
                       {city.CityName}
@@ -237,10 +371,53 @@ const Station: React.FC = () => {
                       )}
                     </StationList>
                   )
-                    : <NoMatchStations><p>換個關鍵字再找找吧！</p></NoMatchStations>
+                    : <NoMatchStations><p>換個關鍵字再找找！</p></NoMatchStations>
                 }
               </StationListContainer>
             </SearchGroup>
+            <StopsList>
+              {currentStationWithRouteAndFavo.Stops?.map((stop) => (
+                <StopItem
+                  key={stop.StopUID}
+                  onClick={() => {
+                    const favoData = {
+                      zhName: stop.RouteName.Zh_tw || '',
+                      engName: stop.RouteName.En,
+                      routeUid: stop.RouteUID,
+                      city: citySelected.en,
+                      zhCity: citySelected.zh,
+                      departureStop: stop.DepartureStopNameZh,
+                      destinationStop: stop.DestinationStopNameZh,
+                    };
+
+                    const favoDataStr = JSON.stringify(favoData);
+
+                    navigate({
+                      pathname: `/bus/${citySelected.en}`,
+                      search: `?route_name=${stop.RouteName.Zh_tw}&route_uid=${stop.RouteUID}&city=${citySelected.en}&stop=${stop.StopName?.Zh_tw || ''}&favo_data=${favoDataStr}`,
+                    });
+                  }}
+                >
+                  <div>
+                    <p className="route-num">{stop.RouteName.Zh_tw}</p>
+                    <p className="route-name">往 {stop.DepartureStopNameZh}</p>
+                  </div>
+                  <div>
+                    <AddFavoBtn
+                      type="button"
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        e.stopPropagation();
+                        toggleStopFavo(stop);
+                      }}
+                    >
+                      {stop.isFavorite ? <span className="material-icons-outlined favorite">favorite</span>
+                        : <span className="material-icons-outlined favorite">favorite_border</span>}
+                    </AddFavoBtn>
+                    <p className="cityName">{citySelected.zh}</p>
+                  </div>
+                </StopItem>
+              ))}
+            </StopsList>
             {/* <BusList routes={currentStation?.Stops || []} height="calc(100% - 36px)" /> */}
           </StationSearchPanel>
           <RoutesOffcanvas

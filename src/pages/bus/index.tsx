@@ -1,10 +1,12 @@
 import styled from '@emotion/styled';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useEffect, useMemo, useRef, useState,
+} from 'react';
 import type {
   BusNearStop,
   IBusNearStop,
   IBusRoute, IBusRouteDetail, IBusStopArriveTime, IEstimate, IFavoRoutes, IGetRouteData,
-  IShapeOfBusRouteRes, ShapeOfBusRoute, ThemeProps,
+  IShapeOfBusRouteRes, IStationPosition, ShapeOfBusRoute, ThemeProps,
 } from 'react-app-env';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import Breadcrumb from 'components/Breadcrumb';
@@ -119,6 +121,7 @@ const Bus: React.FC = () => {
   const [getSharpOfBusRouteTrigger] = useLazyGetSharpOfBusRouteByRouteUidQuery();
   const [getBusNearStopTrigger] = useLazyGetBusNearStopQuery();
   const params = useParams();
+  const stationPosition = JSON.parse(searchParams.get('station_position') || '{}') as IStationPosition;
 
   interface IBusDirectionSort {
     directionGo: { [key: string]: Array<IEstimate> };
@@ -345,6 +348,7 @@ const Bus: React.FC = () => {
           busRoute={busRoute[busDirection] || {}}
           shapeOfBusRoute={shapeOfBusRoute[busDirection] || shapeOfBusRoute[0] || []}
           busNearStop={busNearStop[busDirection] || []}
+          focusPosition={stationPosition}
         />
       </MainContainer>
     </>

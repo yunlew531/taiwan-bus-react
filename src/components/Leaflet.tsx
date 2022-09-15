@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import L from 'leaflet';
 import type {
-  IBusNearStop, IBusRouteDetail, ShapeOfBusRoute,
+  IBusNearStop, IBusRouteDetail, IStationPosition, ShapeOfBusRoute,
 } from 'react-app-env';
 import { useAppDispatch } from 'hooks';
 import { setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
@@ -65,15 +65,21 @@ interface LeafletProps {
   busRoute: IBusRouteDetail;
   shapeOfBusRoute: ShapeOfBusRoute[0];
   busNearStop: Array<IBusNearStop>;
+  focusPosition?: IStationPosition;
 }
 
-const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute, busNearStop }) => {
+const Leaflet: React.FC<LeafletProps> = ({
+  busRoute, shapeOfBusRoute, busNearStop, focusPosition = {} as IStationPosition,
+}) => {
   const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const mapRef = useRef(null);
   const mapInstanceRef = useRef<L.Map>();
   const [isStopPopupShow, setIsStopPopupShow] = useState(true);
+  const isFocusPositionExist = !!Object.keys(focusPosition).length;
+  const { PositionLat, PositionLon } = focusPosition;
+  const position: [number, number] = [PositionLat, PositionLon];
 
   const pinkIcon = new L.DivIcon({
     className: 'marker pink-marker',
@@ -127,7 +133,11 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute, busNearSto
     const renderRouteShapeLine = () => {
       if (shapeOfBusRoute?.length && mapInstanceRef.current) {
         routeShapeLine.current = L.polyline(shapeOfBusRoute).addTo(mapInstanceRef.current);
-        mapInstanceRef.current.fitBounds(shapeOfBusRoute);
+        if (isFocusPositionExist) {
+          mapInstanceRef.current.flyTo(position, 18);
+        } else {
+          mapInstanceRef.current.fitBounds(shapeOfBusRoute);
+        }
       }
     };
 
@@ -171,11 +181,11 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute, busNearSto
 
       stops?.forEach((stop) => {
         const { EstimateTime } = stop.Estimates[0];
-        const { PositionLat, PositionLon } = stop.StopPosition;
+        const { PositionLat: lat, PositionLon: lon } = stop.StopPosition;
         const { Zh_tw: stopName } = stop.StopName;
 
         if (mapInstanceRef.current) {
-          const marker = L.marker([PositionLat, PositionLon], {
+          const marker = L.marker([lat, lon], {
             draggable: false,
             icon: handleStopMarkerStyle(EstimateTime),
           })
@@ -210,9 +220,9 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute, busNearSto
         const { StopPosition } = busRoute.Stops
           .filter((stop) => stop.StopUID === bus.StopUID)[0] || {};
         if (!StopPosition) return;
-        const { PositionLat, PositionLon } = StopPosition;
+        const { PositionLat: lat, PositionLon: lon } = StopPosition;
 
-        const marker = new L.Marker([PositionLat, PositionLon], {
+        const marker = new L.Marker([lat, lon], {
           icon: busIcon,
           draggable: false,
         }).addTo(mapInstanceRef.current as L.Map);
@@ -273,6 +283,10 @@ const Leaflet: React.FC<LeafletProps> = ({ busRoute, shapeOfBusRoute, busNearSto
       <Map ref={mapRef} />
     </Wrap>
   );
+};
+
+Leaflet.defaultProps = {
+  focusPosition: {} as IStationPosition,
 };
 
 export default Leaflet;

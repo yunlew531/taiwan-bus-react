@@ -180,8 +180,24 @@ interface IFavoRoute {
   destinationStop: string;
 }
 
+interface IFavoStop {
+  routeUid: string;
+  routeName: string;
+  destinationStop: string;
+  destinationStop: string;
+  zhCity: string;
+  city: string;
+  stopUid: string;
+  stopName: string;
+  position: IStationPosition;
+}
+
 interface IFavoRoutes {
   [key: string]: IFavoRoute | null;
+}
+
+interface IFavoStops {
+  [key: string]: IFavoStop | null;
 }
 
 interface ICityCounty {
@@ -202,7 +218,7 @@ interface IStationPosition {
   GeoHash: string;
 }
 
-type Stops = Array<{
+interface IStopInStation {
   RouteUID: string;
   RouteID: string;
   RouteName: {
@@ -218,7 +234,7 @@ type Stops = Array<{
   DepartureStopNameZh?: string;
   DestinationStopNameZh?: string;
   isFavorite: boolean;
-}>;
+}
 
 interface IStation {
   StationUID: string;
@@ -228,7 +244,7 @@ interface IStation {
   },
   StationAddress: string;
   StationPosition: IStationPosition;
-  Stops: IStops;
+  Stops: Array<IStopInStation>;
   LocationCityCode: string;
   Bearing: string;
   UpdateTime: string;

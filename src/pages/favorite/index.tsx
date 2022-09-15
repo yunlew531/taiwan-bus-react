@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import Breadcrumb from 'components/Breadcrumb';
-import type { IFavoRoute, ThemeProps } from 'react-app-env';
+import type {
+  IFavoRoute, IFavoRoutes, IFavoStop, IFavoStops, ThemeProps,
+} from 'react-app-env';
 import { useAppDispatch, useAppSelector } from 'hooks';
 import { useNavigate } from 'react-router-dom';
-import { setFavoRoutes } from 'slices/busRoutesSlice';
+import { setFavoRoutes, setFavoStops } from 'slices/busRoutesSlice';
 
 const MainContainer = styled.div<ThemeProps>`
   position: absolute;
@@ -36,15 +38,15 @@ const FavoriteBtnGroup = styled.div<ThemeProps>`
   }
 `;
 
-const FavoriteBusStopBtn = styled.button<ThemeProps>`
+const FavoriteBusStopBtn = styled.button<ThemeProps & { active: boolean }>`
   font-weight: 700;
-  color: ${({ theme: { colors: { white } } }) => white};
-  background-color: ${({ theme: { colors: { primary } } }) => primary};
+  color: ${({ theme: { colors: { white, black } }, active }) => (active ? white : black)};
+  background-color: ${({ theme: { colors: { primary, gray_200 } }, active }) => (active ? primary : gray_200)};
 `;
 
-const FavoriteBusStationBtn = styled.button<ThemeProps>`
-  color: ${({ theme: { colors: { black } } }) => black};
-  background-color: ${({ theme: { colors: { gray_200 } } }) => gray_200};
+const FavoriteBusStationBtn = styled.button<ThemeProps & { active: boolean }>`
+  color: ${({ theme: { colors: { black, white } }, active }) => (active ? white : black)};
+  background-color: ${({ theme: { colors: { gray_200, primary } }, active }) => (active ? primary : gray_200)};
 `;
 
 const CitySelector = styled.div<ThemeProps>`
@@ -104,6 +106,10 @@ const BusStopItem = styled.li<ThemeProps>`
   justify-content: space-between;
   border-bottom: 1px solid ${({ theme: { colors: { gray_400 } } }) => gray_400};
   padding: 12px 5px;
+  transition: 0.1s filter linear;
+  &:hover {
+    filter: brightness(0.7);
+  }
   .bus-number {
     font-size: ${({ theme: { fontSizes: { fs_1 } } }) => fs_1};
     font-weight: 700;
@@ -168,11 +174,14 @@ const BusStationItem = styled.li<ThemeProps>`
 
 const Favorite: React.FC = () => {
   const favoRoutes = useAppSelector((state) => state.busRoutes.favoRoutes);
+  const favoStops = useAppSelector((state) => state.busRoutes.favoStops);
   const [favoRoutesArr, setFavoRoutesArr] = useState<Array<IFavoRoute>>([]);
+  const [favoStopsArr, setFavoStopsArr] = useState<Array<IFavoStop>>([]);
+  const [currentDisplay, setCurrentDisplay] = useState<'routes' | 'stops'>('routes');
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const handleFavoItemClick = (routeItem: IFavoRoute) => {
+  const handleFavoRouteClick = (routeItem: IFavoRoute) => {
     const { city, routeUid, zhName } = routeItem;
     const search = `?city=${city}/&route_uid=${routeUid}&route_name=${zhName}&favo_data=${JSON.stringify(routeItem)}`;
 
@@ -182,27 +191,59 @@ const Favorite: React.FC = () => {
     });
   };
 
-  const removeFavorite = (favoRoute: IFavoRoute) => {
+  const handleFavoStopClick = (stopItem: IFavoStop) => {
+    const {
+      city, routeUid, routeName, position,
+    } = stopItem;
+    const search = `?city=${city}/&route_uid=${routeUid}&route_name=${routeName}&favo_data=${JSON.stringify(stopItem)}&station_position=${JSON.stringify(position)}`;
+
+    navigate({
+      pathname: `/bus/${city}`,
+      search,
+    });
+  };
+
+  const removeRouteFavorite = (favoRoute: IFavoRoute) => {
+    const { routeUid } = favoRoute;
     const routesData = {
       ...favoRoutes,
-      [favoRoute.routeUid]: null,
+      [routeUid]: null,
     };
-    const routesDataStr = JSON.stringify(routesData);
 
-    localStorage.setItem('favoRoutes', routesDataStr);
+    localStorage.setItem('favoRoutes', JSON.stringify(routesData));
     dispatch(setFavoRoutes(routesData));
   };
 
-  useEffect(() => {
-    const formatFavoRoutesToArr = () => {
-      const values = Object.values(favoRoutes);
-      const favoRoutesData = Object.keys(favoRoutes).map((favoRoute, idx) => values[idx])
-        .filter((route) => route) as Array<IFavoRoute>;
-      setFavoRoutesArr(favoRoutesData);
+  const removeStopFavorite = (favoStop: IFavoStop) => {
+    const { routeUid } = favoStop;
+    const favoStopsData = {
+      ...favoStops,
+      [routeUid]: null,
     };
 
-    formatFavoRoutesToArr();
+    localStorage.setItem('favoStops', JSON.stringify(favoStopsData));
+    dispatch(setFavoStops(favoStopsData));
+  };
+
+  useEffect(() => {
+    const formatFavoRoutesToArr = (favoRoutesData: IFavoRoutes) => {
+      const values = Object.values(favoRoutesData);
+      const favoRoutesArrData = Object.keys(favoRoutesData).map((favoRoute, idx) => values[idx])
+        .filter((route) => route) as Array<IFavoRoute>;
+      setFavoRoutesArr(favoRoutesArrData);
+    };
+
+    formatFavoRoutesToArr(favoRoutes);
   }, [favoRoutes]);
+
+  useEffect(() => {
+    const formatFavoStopsToArr = (favoStopsData: IFavoStops) => Object.values(favoStopsData)
+      .filter((favoStop) => favoStop) as Array<IFavoStop>;
+
+    const favoStopsData = formatFavoStopsToArr(favoStops);
+
+    setFavoStopsArr(favoStopsData);
+  }, [favoStops]);
 
   return (
     <>
@@ -210,37 +251,35 @@ const Favorite: React.FC = () => {
       <MainContainer>
         <FavoriteContainer>
           <FavoriteBtnGroup>
-            <FavoriteBusStopBtn type="button">收藏站牌</FavoriteBusStopBtn>
-            <FavoriteBusStationBtn type="button">收藏站點</FavoriteBusStationBtn>
+            <FavoriteBusStopBtn
+              type="button"
+              onClick={() => setCurrentDisplay('routes')}
+              active={currentDisplay === 'routes'}
+            >收藏路線
+            </FavoriteBusStopBtn>
+            <FavoriteBusStationBtn
+              type="button"
+              onClick={() => setCurrentDisplay('stops')}
+              active={currentDisplay === 'stops'}
+            >收藏站點
+            </FavoriteBusStationBtn>
           </FavoriteBtnGroup>
           <CitySelector>
             <Selected>
-              <p className="title">台北市</p>
+              <p className="title">臺北市</p>
               <span className="material-icons-outlined expand-more">expand_more</span>
             </Selected>
             <CityList show={false}>
-              <CityItem>台北市</CityItem>
-              <CityItem>台北市</CityItem>
-              <CityItem>台北市</CityItem>
+              <CityItem>臺北市</CityItem>
+              <CityItem>臺北市</CityItem>
+              <CityItem>臺北市</CityItem>
             </CityList>
           </CitySelector>
-          <BusStopList show={false}>
-            <BusStopItem>
-              <div>
-                <p className="bus-number">30 延</p>
-                <p className="content">台中區監理所 - 台中火車站</p>
-              </div>
-              <FavoriteGroup>
-                <span className="material-icons-outlined favorite">favorite</span>
-                <p className="title">台中</p>
-              </FavoriteGroup>
-            </BusStopItem>
-          </BusStopList>
-          <BusStationList show>
+          <BusStationList show={currentDisplay === 'routes'}>
             {favoRoutesArr.map((favoRoute) => (
               <BusStationItem
                 key={favoRoute.routeUid}
-                onClick={() => handleFavoItemClick(favoRoute)}
+                onClick={() => handleFavoRouteClick(favoRoute)}
               >
                 <div>
                   <span className="bus-description">{favoRoute.departureStop} - {favoRoute.destinationStop}</span>
@@ -251,7 +290,7 @@ const Favorite: React.FC = () => {
                     type="button"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
-                      removeFavorite(favoRoute);
+                      removeRouteFavorite(favoRoute);
                     }}
                   >
                     <span className="material-icons-outlined favorite">favorite</span>
@@ -262,6 +301,28 @@ const Favorite: React.FC = () => {
             ))}
 
           </BusStationList>
+          <BusStopList show={currentDisplay === 'stops'}>
+            {favoStopsArr.map((favoStop) => (
+              <BusStopItem key={favoStop.routeUid} onClick={() => handleFavoStopClick(favoStop)}>
+                <div>
+                  <p className="bus-number">{favoStop.routeName}</p>
+                  <p className="content">{favoStop.stopName}</p>
+                </div>
+                <FavoriteGroup>
+                  <AddFavoBtn
+                    type="button"
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                      e.stopPropagation();
+                      removeStopFavorite(favoStop);
+                    }}
+                  >
+                    <span className="material-icons-outlined favorite">favorite</span>
+                  </AddFavoBtn>
+                  <p className="title">{favoStop.zhCity}</p>
+                </FavoriteGroup>
+              </BusStopItem>
+            ))}
+          </BusStopList>
         </FavoriteContainer>
       </MainContainer>
     </>

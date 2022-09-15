@@ -60,7 +60,7 @@ const {
 const CityList: React.FC = () => {
   const cities = [
     {
-      title: '台北市／新北市',
+      title: '臺北市／新北市',
       engTitle: 'Taipei / New Taipei',
       color: darkBlue,
     },
@@ -70,12 +70,12 @@ const CityList: React.FC = () => {
       color: blue,
     },
     {
-      title: '台中市',
+      title: '臺中市',
       engTitle: 'Taichung',
       color: secondary,
     },
     {
-      title: '台南市',
+      title: '臺南市',
       engTitle: 'Tainan',
       color: green,
     },
