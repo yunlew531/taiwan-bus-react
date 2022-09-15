@@ -13,13 +13,13 @@ interface IBusRoute {
     En: string;
     Zh_tw: string;
   }
-  Operators: Array<{
+  Operators?: Array<{
     OperatorName: {
       Zh_tw: string;
       En: string;
     }
   }>
-  SubRoutes: Array<{
+  SubRoutes?: Array<{
     Headsign: string;
     Direction: 0 | 1;
   }>
@@ -34,6 +34,7 @@ interface IBusRoute {
   isFavorite?: boolean;
 }
 
+type BusRoutes = Array<IBusRoute>;
 type PositionLatLon = [number, number];
 
 interface IStop {
@@ -181,4 +182,60 @@ interface IFavoRoute {
 
 interface IFavoRoutes {
   [key: string]: IFavoRoute | null;
+}
+
+interface ICityCounty {
+  CityName: string;
+  CityEngName: string;
+  AreaList: Array<ICounty>;
+}
+
+interface ICounty {
+  ZipCode: string;
+  AreaName: string;
+  AreaEngName: string;
+}
+
+interface IStationPosition {
+  PositionLon: number;
+  PositionLat: number;
+  GeoHash: string;
+}
+
+type Stops = Array<{
+  RouteUID: string;
+  RouteID: string;
+  RouteName: {
+    Zh_tw: string;
+    En: string;
+  };
+  StopUID?: string;
+  StopID?: string;
+  StopName?: {
+    Zh_tw: string;
+    En: string;
+  }
+  DepartureStopNameZh?: string;
+  DestinationStopNameZh?: string;
+  isFavorite: boolean;
+}>;
+
+interface IStation {
+  StationUID: string;
+  StationID: string;
+  StationName: {
+    Zh_tw: string;
+  },
+  StationAddress: string;
+  StationPosition: IStationPosition;
+  Stops: IStops;
+  LocationCityCode: string;
+  Bearing: string;
+  UpdateTime: string;
+  VersionID: string;
+}
+
+interface IGetStationData {
+  city: string;
+  stationName?: string;
 }

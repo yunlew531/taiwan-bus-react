@@ -1,17 +1,29 @@
 import styled from '@emotion/styled';
 import React, { useEffect, useMemo, useState } from 'react';
-import type { IBusRoute, IFavoRoutes, ThemeProps } from 'react-app-env';
+import type {
+  BusNearStop,
+  IBusNearStop,
+  IBusRoute, IBusRouteDetail, IBusStopArriveTime, IEstimate, IFavoRoutes, IGetRouteData,
+  IShapeOfBusRouteRes, ShapeOfBusRoute, ThemeProps,
+} from 'react-app-env';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import Breadcrumb from 'components/Breadcrumb';
 import BusList from 'components/BusList';
 import Search from 'components/Search';
 import RoutesOffcanvas from 'components/RoutesOffcanvas';
-import { useLazyGetRoutesByCityQuery } from 'services/bus';
+import {
+  useLazyGetBusArriveTimeByRouteUidQuery, useLazyGetBusNearStopQuery,
+  useLazyGetRouteByRouteUidQuery, useLazyGetRoutesByCityQuery,
+  useLazyGetSharpOfBusRouteByRouteUidQuery,
+} from 'services/bus';
 import { useAppDispatch, useAppSelector } from 'hooks';
-import { setBusRoutes } from 'slices/busRoutesSlice';
+import {
+  setBusNearStop, setBusRoutes, setRouteInOffcanvas, setShapeOfBusRoute,
+} from 'slices/busRoutesSlice';
 import translateCity from 'utils/translateCity';
 import Leaflet from 'components/Leaflet';
 import mergeFavoRoutesInBusRoutes from 'utils/mergeFavoRoutesInBusRoutes';
+import mergeFavoRouteInBusRouteDetail from 'utils/mergeFavoRouteInBusRouteDetail';
 
 const MainContainer = styled.div`
   position: absolute;
@@ -102,6 +114,81 @@ const Bus: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
   const [busDirection, setBusDirection] = useState<0 | 1>(0);
   const favoRoutes = useAppSelector((state) => state.busRoutes.favoRoutes);
+  const [getRouteByUidTrigger, { isError }] = useLazyGetRouteByRouteUidQuery();
+  const [getBusArriveTimesTrigger] = useLazyGetBusArriveTimeByRouteUidQuery();
+  const [getSharpOfBusRouteTrigger] = useLazyGetSharpOfBusRouteByRouteUidQuery();
+  const [getBusNearStopTrigger] = useLazyGetBusNearStopQuery();
+  const params = useParams();
+
+  interface IBusDirectionSort {
+    directionGo: { [key: string]: Array<IEstimate> };
+    directionReturn: { [key: string]: Array<IEstimate> };
+  }
+
+  const sortBusStopArriveTimesByDirection = (busStops: Array<IBusStopArriveTime>) => busStops
+    .reduce((prev, busStop) => {
+      const {
+        Direction, StopUID, EstimateTime, Estimates = [],
+      } = busStop;
+      const estimates = [...Estimates];
+      estimates[0] = estimates[0] || { EstimateTime };
+
+      if (Direction === 0) {
+        prev.directionGo[StopUID] = estimates;
+      } else {
+        prev.directionReturn[StopUID] = estimates;
+      }
+      return prev;
+    }, { directionGo: {}, directionReturn: {} } as IBusDirectionSort);
+
+  const mergeBusStopAndArriveTime = (
+    routesData: Array<IBusRouteDetail>,
+    arriveTimesData: IBusDirectionSort,
+  ) => {
+    const routesWithBusArriveTime = [] as Array<IBusRouteDetail>;
+    const { directionGo, directionReturn } = arriveTimesData;
+
+    routesWithBusArriveTime[0] = {
+      ...routesData[0],
+      Stops: routesData[0].Stops.map((stop) => (
+        { ...stop, Estimates: directionGo[stop.StopUID] || [[]] })),
+    };
+
+    if (routesData.length === 2) {
+      routesWithBusArriveTime[1] = {
+        ...routesData[1],
+        Stops: routesData[1].Stops.map((stop) => (
+          { ...stop, Estimates: directionReturn[stop.StopUID] || [[]] })),
+      };
+    }
+
+    return routesWithBusArriveTime;
+  };
+
+  type LatLonStrArray = [Array<string>, Array<string>];
+
+  const formatShapeOfBusRouteStrToArr = (shapeData: Array<IShapeOfBusRouteRes>) => {
+    const latLonStrArray = shapeData.map((shape) => {
+      const str = params.city === 'Taipei&NewTaipei' ? ' ' : '';
+
+      return shape.Geometry.replace(`LINESTRING${str}`, '').replace('MULTI((', '').split(',');
+    }) as LatLonStrArray;
+    const latLonArray = latLonStrArray.map((latLonStrs) => latLonStrs
+      .map((latLonStr) => latLonStr.split(' ').filter((str) => str).reverse()
+        .map((latLon) => Number(latLon.replaceAll('(', '').replaceAll(')', ''))))) as ShapeOfBusRoute;
+
+    return latLonArray;
+  };
+
+  const formatBusNearStopBYDirection = (busNearStops: Array<IBusNearStop>) => {
+    const result = busNearStops.reduce((prev, busNearStopItem) => {
+      if (busNearStopItem.Direction === 0) prev[0]?.push(busNearStopItem);
+      else if (busNearStopItem.Direction === 1) prev[1]?.push(busNearStopItem);
+      return prev;
+    }, [[], []] as BusNearStop);
+
+    return result;
+  };
 
   useEffect(() => {
     const getRoutes = async () => {
@@ -153,6 +240,55 @@ const Bus: React.FC = () => {
       }
     };
 
+    const getBusRouteData = async () => {
+      const routeUid = searchParams.get('route_uid');
+      const routeName = searchParams.get('route_name');
+      const city = searchParams.get('city');
+
+      if (city === 'Kaohsiung') {
+        alert(`
+          政府 TDX API 資料服務尚未提供高雄查詢！
+          推測可能是資料正從 PTX 轉移至 TDX 緣故。
+        `);
+        return;
+      }
+
+      if (routeName === null || routeUid === null || city === null) return;
+
+      const reqData: IGetRouteData = {
+        city,
+        routeName,
+        routeUid,
+      };
+
+      try {
+        const [
+          { data: routeData = [] },
+          { data: busArriveTimesData = [] },
+          { data: shapeOfBusRouteData = [] },
+          { data: busNearStopData = [] },
+        ] = await Promise.all(
+          [
+            getRouteByUidTrigger(reqData),
+            getBusArriveTimesTrigger(reqData),
+            getSharpOfBusRouteTrigger(reqData),
+            getBusNearStopTrigger(reqData),
+          ],
+        );
+        const busRouteShapeLatLon = formatShapeOfBusRouteStrToArr(shapeOfBusRouteData);
+        const busStopArriveTimes = sortBusStopArriveTimesByDirection(busArriveTimesData);
+        const routesWithBusArriveTime = mergeBusStopAndArriveTime(routeData, busStopArriveTimes);
+        const routeDetailData = mergeFavoRouteInBusRouteDetail(favoRoutes, routesWithBusArriveTime);
+        const busNearStopWithDirection = formatBusNearStopBYDirection(busNearStopData);
+
+        dispatch(setRouteInOffcanvas(routeDetailData));
+        dispatch(setShapeOfBusRoute(busRouteShapeLatLon));
+        dispatch(setBusNearStop(busNearStopWithDirection));
+      } catch (error) { console.error(error); }
+    };
+
+    getBusRouteData().catch(() => {});
+
     handleSearching();
   }, [location]);
 
@@ -179,7 +315,11 @@ const Bus: React.FC = () => {
         <RoutesContainer>
           <BusSearchPanel show={isSearchOffcanvasOpen}>
             <BusListPanel>
-              <Search value={searchValue} setValue={setSearchValue} placeholder="輸入公車路線 / 起迄方向名或關鍵字" />
+              <Search
+                value={searchValue}
+                setValue={setSearchValue}
+                placeholder="輸入公車路線 / 起迄方向名或關鍵字"
+              />
               <BusList
                 routes={busRoutesFilter}
               />

@@ -3,10 +3,11 @@ import styled from '@emotion/styled';
 import type { ThemeProps } from 'react-app-env';
 import { Link as OriginLink } from 'react-router-dom';
 
-const BreadcrumbStyle = styled.div`
+const BreadcrumbStyle = styled.div<ThemeProps>`
   display: flex;
   justify-content: space-between;
   height: 36px;
+  font-size: ${({ theme: { fontSizes: { fs_4 } } }) => fs_4};
   line-height: 36px;
   padding: 0 66px;
 `;

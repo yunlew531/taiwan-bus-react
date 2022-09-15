@@ -2,6 +2,8 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import Cookies from 'js-cookie';
 import type {
   IBusStopArriveTime, IBusRoute, IBusRouteDetail, IShapeOfBusRouteRes, IGetRouteData, IBusNearStop,
+  IStation,
+  IGetStationData,
 } from 'react-app-env';
 
 export const busApi = createApi({
@@ -29,6 +31,9 @@ export const busApi = createApi({
     getBusNearStop: builder.query<Array<IBusNearStop>, IGetRouteData>({
       query: ({ city, routeName, routeUid }) => `RealTimeNearStop/City/${city}/${routeName}?$filter=contains(RouteUID, '${routeUid}')`,
     }),
+    getStations: builder.query<Array<IStation>, IGetStationData>({
+      query: ({ city, stationName }) => `Station/City/${city}${stationName ? `?$filter=contains(StationName/Zh_tw, '${stationName}')` : ''}`,
+    }),
   }),
 });
 
@@ -39,4 +44,5 @@ export const {
   useLazyGetBusArriveTimeByRouteUidQuery,
   useLazyGetSharpOfBusRouteByRouteUidQuery,
   useLazyGetBusNearStopQuery,
+  useLazyGetStationsQuery,
 } = busApi;

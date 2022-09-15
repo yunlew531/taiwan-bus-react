@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, useRoutes } from 'react-router-dom';
+import { BrowserRouter, useRoutes, HashRouter } from 'react-router-dom';
 import { ThemeProvider } from '@emotion/react';
 import theme from 'styleSheets/theme';
 import styled from '@emotion/styled';
@@ -44,10 +44,18 @@ const App = () => {
   );
 };
 
-const AppWrapper: React.FC = () => (
-  <BrowserRouter basename={process.env.NODE_ENV === 'production' ? '/taiwan-bus-react' : '/'}>
+const browserElement = (
+  <BrowserRouter>
     <App />
   </BrowserRouter>
 );
+
+const hashElement = (
+  <HashRouter>
+    <App />
+  </HashRouter>
+);
+
+const AppWrapper: React.FC = () => (process.env.NODE_ENV === 'production' ? hashElement : browserElement);
 
 export default AppWrapper;

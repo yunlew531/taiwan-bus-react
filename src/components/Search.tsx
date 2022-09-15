@@ -40,13 +40,17 @@ interface ISearch {
   setValue: (v: string) => void;
 }
 
-const Search: React.FC<ISearch> = ({ placeholder, value, setValue }) => {
+const Search: React.FC<ISearch> = ({
+  placeholder, value, setValue,
+}) => {
   return (
     <SearchRouteInputGroup>
-      <input type="text" value={value} placeholder={placeholder} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(e.target.value)} />
-      <SearchBtn type="button">
-        <span className="material-icons-outlined">search</span>
-      </SearchBtn>
+      <input
+        type="text"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(e.target.value)}
+      />
     </SearchRouteInputGroup>
   );
 };

@@ -176,7 +176,8 @@ const NearStation: React.FC = () => {
       <MainContainer>
         <StationsContainer>
           <Offcanvas show>
-            <Search value={searchValue} setValue={setSearchValue} placeholder="想去哪裡？" />
+            {/* // TODO:}
+            {/* <Search value={searchValue} setValue={setSearchValue} placeholder="想去哪裡？" /> */}
             <StationList>
               {
                 Array.from(Array(15).keys()).map((item) => (

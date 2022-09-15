@@ -24,6 +24,7 @@ const theme = {
     fs_2: '18px',
     fs_3: '16px',
     fs_4: '14px',
+    fs_5: '12px',
   },
 };
 

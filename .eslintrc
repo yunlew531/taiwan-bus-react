@@ -19,6 +19,7 @@
     "arrow-body-style": "off",
     "react-hooks/exhaustive-deps": "off",
     "react/jsx-one-expression-per-line" : "off",
-    "no-param-reassign": "off"
+    "no-param-reassign": "off",
+    "@typescript-eslint/no-non-null-assertion": "off"
   }
 }
