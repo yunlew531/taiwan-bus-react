@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
-import type { ThemeProps } from 'react-app-env';
+import type { IStation, ThemeProps } from 'react-app-env';
 import Breadcrumb from 'components/Breadcrumb';
 import Search from 'components/Search';
 import Offcanvas from 'components/Offcanvas';
 import TimeBadge from 'components/TimeBadge';
 import RoutesOffcanvas from 'components/RoutesOffcanvas';
+import useGeoLocation from 'hooks/useGeoLocation';
+import Leaflet from 'components/Leaflet';
+import { useLazyGetStationsQuery } from 'services/bus';
+import { getDistance } from 'geolib';
 
 const MainContainer = styled.div`
   position: absolute;
@@ -39,9 +43,14 @@ const StationItem = styled.li<ThemeProps>`
     filter: brightness(0.7);
   }
   .title {
+    display: inline-block;
     font-size: ${({ theme: { fontSizes: { fs_2 } } }) => fs_2};
     font-weight: 700;
-    margin-bottom: 3px;
+    margin: 0 3px 3px 0;
+  }
+  .bearing {
+    font-size: ${({ theme: { fontSizes: { fs_5 } } }) => fs_5};
+    color: ${({ theme: { colors: { gray_600 } } }) => gray_600};
   }
   .description{
     font-size: ${({ theme: { fontSizes: { fs_4 } } }) => fs_4};
@@ -51,6 +60,7 @@ const StationItem = styled.li<ThemeProps>`
 
 const DistanceContainer = styled.div<ThemeProps>`
   display: flex;
+  justify-content: space-between;
   align-items: center;
   color: ${({ theme: { colors: { gray_600 } } }) => gray_600};
   .location {
@@ -58,6 +68,7 @@ const DistanceContainer = styled.div<ThemeProps>`
     margin-right: 3px;
   }
   .distance {
+    width: 50px;
     font-size: ${({ theme: { fontSizes: { fs_4 } } }) => fs_4};
   }
 `;
@@ -167,8 +178,62 @@ const FavoriteBtn = styled.button<ThemeProps>`
   }
 `;
 
+enum Bearing {
+  'E' = '東',
+  'W' = '西',
+  'S' = '南',
+  'N' = '北',
+}
+
 const NearStation: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
+  const { position, county, getGeoLocation } = useGeoLocation();
+  const [getStationsTrigger, { data: stations = [] }] = useLazyGetStationsQuery();
+  const [stationsInOneKilometers, setStationsInOneKilometers] = useState<Array<IStation>>([]);
+
+  useEffect(() => {
+    getGeoLocation();
+  }, []);
+
+  useEffect(() => {
+    const getStations = () => {
+      if (!county.en) return;
+      getStationsTrigger({ city: county.en }).catch(() => {});
+    };
+
+    getStations();
+  }, [county]);
+
+  useEffect(() => {
+    const filterStationsInOneKilometers = () => {
+      const { latitude, longitude } = position;
+      if (!latitude || !longitude) return;
+      if (!stations.length) return;
+
+      const oneKilometers = 1000;
+      const stationsInOneKilometersArr = stations.reduce((prev, stationItem) => {
+        const station = { ...stationItem };
+        const { PositionLat, PositionLon } = station.StationPosition;
+        if (PositionLat && PositionLon) {
+          const distance = getDistance(
+            { latitude, longitude },
+            { latitude: PositionLat, longitude: PositionLon },
+          );
+          const inOneKilometers = distance <= oneKilometers;
+          if (inOneKilometers) {
+            station.distance = distance;
+            prev.push(station);
+          }
+        }
+
+        return prev;
+      }, [] as Array<IStation>);
+
+      setStationsInOneKilometers(stationsInOneKilometersArr);
+    };
+
+    filterStationsInOneKilometers();
+  }, [stations, position]);
 
   return (
     <>
@@ -180,22 +245,25 @@ const NearStation: React.FC = () => {
             {/* <Search value={searchValue} setValue={setSearchValue} placeholder="想去哪裡？" /> */}
             <StationList>
               {
-                Array.from(Array(15).keys()).map((item) => (
-                  <StationItem key={item}>
+                stationsInOneKilometers.map((station) => (
+                  <StationItem key={station.StationUID}>
                     <div>
-                      <h2 className="title">台中國家歌劇院</h2>
-                      <span className="description">3 個站牌</span>
+                      <h2 className="title">{station.StationName.Zh_tw}</h2>
+                      <span className="bearing">
+                        {station.Bearing.split('').map((str) => Bearing[str as keyof typeof Bearing])}
+                      </span>
+                      <p className="description">{station.Stops.length} 個站牌</p>
                     </div>
                     <DistanceContainer>
                       <span className="material-icons-outlined location">location_on</span>
-                      <span className="distance">210 m</span>
+                      <span className="distance">{station.distance} m</span>
                     </DistanceContainer>
                   </StationItem>
                 ))
               }
             </StationList>
           </Offcanvas>
-          <Offcanvas show>
+          <Offcanvas show={false}>
             <BackToSearchBtn type="button">
               <span className="material-icons-outlined">chevron_left</span>
               <p>返回搜尋</p>
@@ -251,6 +319,9 @@ const NearStation: React.FC = () => {
           </Offcanvas>
           {/* <RoutesOffcanvas show /> */}
         </StationsContainer>
+        <Leaflet
+          focusPosition={{ PositionLat: position.latitude, PositionLon: position.longitude }}
+        />
       </MainContainer>
     </>
   );

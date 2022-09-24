@@ -2,11 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import L from 'leaflet';
 import type {
-  IBusNearStop, IBusRouteDetail, IStationPosition, ShapeOfBusRoute,
+  IBusNearStop, IBusRouteDetail, IPositionLatLonObj, IStationPosition, ITwTownsLatLon,
+  PositionLatLon,
+  ShapeOfBusRoute,
 } from 'react-app-env';
 import { useAppDispatch } from 'hooks';
 import { setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
 import { useSearchParams, useLocation } from 'react-router-dom';
+import { isPointInPolygon } from 'geolib';
+import useGeoLocation from 'hooks/useGeoLocation';
+import translateCity from 'utils/translateCity';
 
 const Wrap = styled.div`
   position: relative;
@@ -62,14 +67,16 @@ const PopupOpenBtn = styled.button<{ isStopPopupShow: boolean }>`
 `;
 
 interface LeafletProps {
-  busRoute: IBusRouteDetail;
-  shapeOfBusRoute: ShapeOfBusRoute[0];
-  busNearStop: Array<IBusNearStop>;
+  busRoute?: IBusRouteDetail;
+  shapeOfBusRoute?: ShapeOfBusRoute[0];
+  busNearStop?: Array<IBusNearStop>;
   focusPosition?: IStationPosition;
 }
 
 const Leaflet: React.FC<LeafletProps> = ({
-  busRoute, shapeOfBusRoute, busNearStop, focusPosition = {} as IStationPosition,
+  busRoute = {} as IBusRouteDetail,
+  shapeOfBusRoute, busNearStop = [],
+  focusPosition = {} as IStationPosition,
 }) => {
   const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
@@ -77,9 +84,10 @@ const Leaflet: React.FC<LeafletProps> = ({
   const mapRef = useRef(null);
   const mapInstanceRef = useRef<L.Map>();
   const [isStopPopupShow, setIsStopPopupShow] = useState(true);
-  const isFocusPositionExist = !!Object.keys(focusPosition).length;
+  const isFocusPositionExist = focusPosition.PositionLat && focusPosition.PositionLon;
   const { PositionLat, PositionLon } = focusPosition;
-  const position: [number, number] = [PositionLat, PositionLon];
+  const defaultPosition: [number?, number?] = [PositionLat, PositionLon];
+  const { position, getGeoLocation } = useGeoLocation();
 
   const pinkIcon = new L.DivIcon({
     className: 'marker pink-marker',
@@ -113,6 +121,7 @@ const Leaflet: React.FC<LeafletProps> = ({
       }).addTo(mapInstanceRef.current);
     };
 
+    getGeoLocation();
     createMap();
 
     return () => {
@@ -134,7 +143,7 @@ const Leaflet: React.FC<LeafletProps> = ({
       if (shapeOfBusRoute?.length && mapInstanceRef.current) {
         routeShapeLine.current = L.polyline(shapeOfBusRoute).addTo(mapInstanceRef.current);
         if (isFocusPositionExist) {
-          mapInstanceRef.current.flyTo(position, 18);
+          mapInstanceRef.current.flyTo(defaultPosition as [number, number], 18);
         } else {
           mapInstanceRef.current.fitBounds(shapeOfBusRoute);
         }
@@ -272,6 +281,13 @@ const Leaflet: React.FC<LeafletProps> = ({
     else closePopup();
   }, [isStopPopupShow]);
 
+  useEffect(() => {
+    if (isFocusPositionExist) {
+      mapInstanceRef.current!.flyTo(defaultPosition as [number, number], 15);
+      console.log('focusPosition', focusPosition);
+    }
+  }, [focusPosition]);
+
   return (
     <Wrap>
       <PopupOpenBtnContainer>
@@ -286,7 +302,10 @@ const Leaflet: React.FC<LeafletProps> = ({
 };
 
 Leaflet.defaultProps = {
+  busRoute: {} as IBusRouteDetail,
   focusPosition: {} as IStationPosition,
+  shapeOfBusRoute: [] as ShapeOfBusRoute[0],
+  busNearStop: [] as Array<IBusNearStop>,
 };
 
 export default Leaflet;

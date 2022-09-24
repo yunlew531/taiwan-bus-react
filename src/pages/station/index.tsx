@@ -11,6 +11,7 @@ import translateCity from 'utils/translateCity';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from 'hooks';
 import { setFavoStops } from 'slices/busRoutesSlice';
+import Leaflet from 'components/Leaflet';
 
 const MainContainer = styled.div`
   position: absolute;
@@ -26,6 +27,7 @@ const StationsContainer = styled.div`
   position: relative;
   max-width: 464px;
   width: 100%;
+  z-index: 10;
 `;
 
 const StationSearchPanel = styled.div<ThemeProps & { show: boolean }>`
@@ -97,7 +99,6 @@ const StationListContainer = styled.div<ThemeProps & { show: boolean }>`
   position: absolute;
   top: 0;
   right: 0;
-  z-index: 2;
   transform: translateX(calc(100% + 10px));
   &::after {
     content: '';
@@ -109,7 +110,6 @@ const StationListContainer = styled.div<ThemeProps & { show: boolean }>`
     width: 15px;
     height: 15px;
     transform: rotate(45deg) translateX(-50%);
-    z-index: 10;
   }
 `;
 
@@ -418,7 +418,6 @@ const Station: React.FC = () => {
                 </StopItem>
               ))}
             </StopsList>
-            {/* <BusList routes={currentStation?.Stops || []} height="calc(100% - 36px)" /> */}
           </StationSearchPanel>
           <RoutesOffcanvas
             show={false}
@@ -426,6 +425,7 @@ const Station: React.FC = () => {
             setBusDirection={setBusDirection}
           />
         </StationsContainer>
+        <Leaflet />
       </MainContainer>
     </>
   );

@@ -37,6 +37,11 @@ interface IBusRoute {
 type BusRoutes = Array<IBusRoute>;
 type PositionLatLon = [number, number];
 
+interface IPositionLatLonObj {
+  latitude: number;
+  longitude: number;
+}
+
 interface IStop {
   Estimates: Array<IEstimate>;
   EstimateTime?: number;
@@ -213,9 +218,9 @@ interface ICounty {
 }
 
 interface IStationPosition {
-  PositionLon: number;
-  PositionLat: number;
-  GeoHash: string;
+  PositionLon?: number;
+  PositionLat?: number;
+  GeoHash?: string;
 }
 
 interface IStopInStation {
@@ -249,9 +254,37 @@ interface IStation {
   Bearing: string;
   UpdateTime: string;
   VersionID: string;
+  distance?: number;
 }
 
 interface IGetStationData {
   city: string;
   stationName?: string;
+}
+
+interface ITown {
+  type: string;
+  properties: {
+    town: string;
+    county: string;
+    town_id: number;
+    county_id: number;
+    area: number;
+    sort: number;
+    show_id: string;
+  },
+  geometry: {
+    type: string;
+    coordinates: [[PositionLatLon[]]]
+  }
+  id: string;
+}
+
+interface ITwTownsLatLon {
+  type: string;
+  link: string;
+  data_time: number;
+  data_source: string;
+  description: string;
+  features: Array<ITown>;
 }

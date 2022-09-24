@@ -1,4 +1,7 @@
-import { useRef } from 'react';
+import { isPointInPolygon } from 'geolib';
+import { useEffect, useState } from 'react';
+import { IPositionLatLonObj, ITwTownsLatLon, PositionLatLon } from 'react-app-env';
+import translateCity from 'utils/translateCity';
 
 interface ICoordinates {
   latitude?: number;
@@ -6,7 +9,8 @@ interface ICoordinates {
 }
 
 const useGeoLocation = () => {
-  const position = useRef<ICoordinates>({});
+  const [position, setPosition] = useState<ICoordinates>({});
+  const [county, setCounty] = useState({ zh: '', en: '' });
 
   const getGeoLocation = () => {
     if (!navigator?.geolocation) return;
@@ -15,17 +19,45 @@ const useGeoLocation = () => {
     geolocation.getCurrentPosition((currentPosition) => {
       const { latitude, longitude } = currentPosition.coords;
 
-      position.current = {
+      setPosition({
         latitude,
         longitude,
-      };
+      });
     });
   };
 
-  return [
-    position.current,
+  useEffect(() => {
+    const findYourCounty = () => {
+      const { latitude, longitude } = position;
+      if (!latitude || !longitude) return;
+
+      fetch(`${process.env.PUBLIC_URL}/json/twtown.json`)
+        .then((res) => res.json() as Promise<ITwTownsLatLon>)
+        .then((res) => {
+          const yourCounty = res.features.filter((town) => {
+            let coordinates:
+            Array<PositionLatLon> | Array<IPositionLatLonObj> = town.geometry.coordinates[0][0];
+            coordinates = coordinates.map((coordinate) => (
+              { latitude: coordinate[1], longitude: coordinate[0] }));
+            return isPointInPolygon({ latitude, longitude }, coordinates);
+          });
+
+          if (!yourCounty.length) return;
+
+          const { county: zh } = yourCounty[0].properties;
+          const en = translateCity(zh, 'en');
+          setCounty({ zh, en });
+        }).catch((err) => { console.error(err); });
+    };
+
+    findYourCounty();
+  }, [position]);
+
+  return {
+    position,
+    county,
     getGeoLocation,
-  ] as const;
+  };
 };
 
 export default useGeoLocation;

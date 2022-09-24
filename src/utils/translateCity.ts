@@ -1,4 +1,4 @@
-const translateCity = (city: string, lan = 'zh') => {
+const translateCity = (city: string, lan: 'zh' | 'en' = 'zh') => {
   let result = '';
 
   if (lan === 'zh') {
