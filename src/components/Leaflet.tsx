@@ -2,16 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import L from 'leaflet';
 import type {
-  IBusNearStop, IBusRouteDetail, IPositionLatLonObj, IStationPosition, ITwTownsLatLon,
-  PositionLatLon,
-  ShapeOfBusRoute,
+  IBusNearStop, IBusRouteDetail, IStationPosition, ShapeOfBusRoute,
 } from 'react-app-env';
 import { useAppDispatch } from 'hooks';
 import { setRouteInOffcanvas, setShapeOfBusRoute } from 'slices/busRoutesSlice';
 import { useSearchParams, useLocation } from 'react-router-dom';
-import { isPointInPolygon } from 'geolib';
 import useGeoLocation from 'hooks/useGeoLocation';
-import translateCity from 'utils/translateCity';
 
 const Wrap = styled.div`
   position: relative;
@@ -284,7 +280,6 @@ const Leaflet: React.FC<LeafletProps> = ({
   useEffect(() => {
     if (isFocusPositionExist) {
       mapInstanceRef.current!.flyTo(defaultPosition as [number, number], 15);
-      console.log('focusPosition', focusPosition);
     }
   }, [focusPosition]);
 

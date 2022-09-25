@@ -5,7 +5,6 @@ import Breadcrumb from 'components/Breadcrumb';
 import Search from 'components/Search';
 import Offcanvas from 'components/Offcanvas';
 import TimeBadge from 'components/TimeBadge';
-import RoutesOffcanvas from 'components/RoutesOffcanvas';
 import useGeoLocation from 'hooks/useGeoLocation';
 import Leaflet from 'components/Leaflet';
 import { useLazyGetStationsQuery } from 'services/bus';
@@ -190,6 +189,16 @@ const NearStation: React.FC = () => {
   const { position, county, getGeoLocation } = useGeoLocation();
   const [getStationsTrigger, { data: stations = [] }] = useLazyGetStationsQuery();
   const [stationsInOneKilometers, setStationsInOneKilometers] = useState<Array<IStation>>([]);
+  const [currentOffcanvas, setCurrentOffcanvas] = useState<'station' | 'stop'>('station');
+  const [currentStation, setCurrentStation] = useState<IStation>();
+
+  const handleStationItemClick = (station: IStation) => {
+    const stops = [...station.Stops];
+    stops.sort((a, b) => (b.RouteUID > a.RouteUID ? -1 : 1));
+    setCurrentOffcanvas('stop');
+    setCurrentStation({ ...station, Stops: stops });
+    console.log(station);
+  };
 
   useEffect(() => {
     getGeoLocation();
@@ -227,7 +236,7 @@ const NearStation: React.FC = () => {
         }
 
         return prev;
-      }, [] as Array<IStation>);
+      }, [] as Array<IStation>).sort((a, b) => a.distance! - b.distance!);
 
       setStationsInOneKilometers(stationsInOneKilometersArr);
     };
@@ -240,13 +249,16 @@ const NearStation: React.FC = () => {
       <Breadcrumb title="附近站牌" copy timeTable />
       <MainContainer>
         <StationsContainer>
-          <Offcanvas show>
+          <Offcanvas show={currentOffcanvas === 'station'}>
             {/* // TODO:}
             {/* <Search value={searchValue} setValue={setSearchValue} placeholder="想去哪裡？" /> */}
             <StationList>
               {
                 stationsInOneKilometers.map((station) => (
-                  <StationItem key={station.StationUID}>
+                  <StationItem
+                    key={station.StationUID}
+                    onClick={() => handleStationItemClick(station)}
+                  >
                     <div>
                       <h2 className="title">{station.StationName.Zh_tw}</h2>
                       <span className="bearing">
@@ -263,8 +275,8 @@ const NearStation: React.FC = () => {
               }
             </StationList>
           </Offcanvas>
-          <Offcanvas show={false}>
-            <BackToSearchBtn type="button">
+          <Offcanvas show={currentOffcanvas === 'stop'}>
+            <BackToSearchBtn type="button" onClick={() => setCurrentOffcanvas('station')}>
               <span className="material-icons-outlined">chevron_left</span>
               <p>返回搜尋</p>
             </BackToSearchBtn>
@@ -277,47 +289,23 @@ const NearStation: React.FC = () => {
                 </SortTimeBtn>
               </StationNameContainer>
               <RouteList>
-                {/* // TODO: map routes */}
-                <RouteItem>
-                  <TimeBadge status="過站">過站</TimeBadge>
-                  <RouteContent>
-                    <p className="route-num">161</p>
-                    <p className="route-directoin">往 中科管理局</p>
-                  </RouteContent>
-                  <FavoriteBtn type="button">
-                    <span className="material-icons-outlined favorite">favorite_border</span>
-                    {/* <span className="material-icons-outlined favorite">favorite</span> */}
-                    <p className="city">台中</p>
-                  </FavoriteBtn>
-                </RouteItem>
-                <RouteItem>
-                  <TimeBadge status="進站中">即將進站</TimeBadge>
-                  <RouteContent>
-                    <p className="route-num">161</p>
-                    <p className="route-directoin">往 中科管理局</p>
-                  </RouteContent>
-                  <FavoriteBtn type="button">
-                    <span className="material-icons-outlined favorite">favorite_border</span>
-                    {/* <span className="material-icons-outlined favorite">favorite</span> */}
-                    <p className="city">台中</p>
-                  </FavoriteBtn>
-                </RouteItem>
-                <RouteItem>
-                  <TimeBadge status="10分">10: 10</TimeBadge>
-                  <RouteContent>
-                    <p className="route-num">161</p>
-                    <p className="route-directoin">往 中科管理局</p>
-                  </RouteContent>
-                  <FavoriteBtn type="button">
-                    <span className="material-icons-outlined favorite">favorite_border</span>
-                    {/* <span className="material-icons-outlined favorite">favorite</span> */}
-                    <p className="city">台中</p>
-                  </FavoriteBtn>
-                </RouteItem>
+                {currentStation?.Stops.map((stop) => (
+                  <RouteItem key={`${stop.RouteUID}${stop.StopUID!}`}>
+                    <TimeBadge status="過站">過站</TimeBadge>
+                    <RouteContent>
+                      <p className="route-num">{stop.RouteName.Zh_tw}</p>
+                      <p className="route-directoin">往 中科管理局</p>
+                    </RouteContent>
+                    <FavoriteBtn type="button">
+                      <span className="material-icons-outlined favorite">favorite_border</span>
+                      {/* <span className="material-icons-outlined favorite">favorite</span> */}
+                      <p className="city">台中</p>
+                    </FavoriteBtn>
+                  </RouteItem>
+                ))}
               </RouteList>
             </RoutesContainer>
           </Offcanvas>
-          {/* <RoutesOffcanvas show /> */}
         </StationsContainer>
         <Leaflet
           focusPosition={{ PositionLat: position.latitude, PositionLon: position.longitude }}
@@ -328,3 +316,30 @@ const NearStation: React.FC = () => {
 };
 
 export default NearStation;
+
+// <div>
+//   <RouteItem>
+//     <TimeBadge status="進站中">即將進站</TimeBadge>
+//     <RouteContent>
+//       <p className="route-num">161</p>
+//       <p className="route-directoin">往 中科管理局</p>
+//     </RouteContent>
+//     <FavoriteBtn type="button">
+//       <span className="material-icons-outlined favorite">favorite_border</span>
+//       {/* <span className="material-icons-outlined favorite">favorite</span> */}
+//       <p className="city">台中</p>
+//     </FavoriteBtn>
+//   </RouteItem>
+//   <RouteItem>
+//     <TimeBadge status="10分">10: 10</TimeBadge>
+//     <RouteContent>
+//       <p className="route-num">161</p>
+//       <p className="route-directoin">往 中科管理局</p>
+//     </RouteContent>
+//     <FavoriteBtn type="button">
+//       <span className="material-icons-outlined favorite">favorite_border</span>
+//       {/* <span className="material-icons-outlined favorite">favorite</span> */}
+//       <p className="city">台中</p>
+//     </FavoriteBtn>
+//   </RouteItem>
+// </div>;
