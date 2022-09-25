@@ -71,7 +71,8 @@ interface LeafletProps {
 
 const Leaflet: React.FC<LeafletProps> = ({
   busRoute = {} as IBusRouteDetail,
-  shapeOfBusRoute, busNearStop = [],
+  shapeOfBusRoute,
+  busNearStop = [],
   focusPosition = {} as IStationPosition,
 }) => {
   const dispatch = useAppDispatch();

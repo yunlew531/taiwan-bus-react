@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
-import type { IStation, ThemeProps } from 'react-app-env';
+import type { IBusRoute, IStation, ThemeProps } from 'react-app-env';
 import Breadcrumb from 'components/Breadcrumb';
 import Search from 'components/Search';
 import Offcanvas from 'components/Offcanvas';
 import TimeBadge from 'components/TimeBadge';
 import useGeoLocation from 'hooks/useGeoLocation';
 import Leaflet from 'components/Leaflet';
-import { useLazyGetStationsQuery } from 'services/bus';
+import { useLazyGetRoutesByCityQuery, useLazyGetStationsQuery } from 'services/bus';
 import { getDistance } from 'geolib';
 
 const MainContainer = styled.div`
@@ -149,7 +149,7 @@ const RouteContent = styled.div<ThemeProps>`
     font-size: ${({ theme: { fontSizes: { fs_1 } } }) => fs_1};
     margin-bottom: 3px;
   }
-  .route-directoin {
+  .route-direction {
     font-size: ${({ theme: { fontSizes: { fs_4 } } }) => fs_4};
     color: ${({ theme: { colors: { gray_600 } } }) => gray_600};
   }
@@ -187,17 +187,66 @@ enum Bearing {
 const NearStation: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
   const { position, county, getGeoLocation } = useGeoLocation();
-  const [getStationsTrigger, { data: stations = [] }] = useLazyGetStationsQuery();
+  const [getStationsTrigger] = useLazyGetStationsQuery();
+  const [getRoutesTrigger] = useLazyGetRoutesByCityQuery();
   const [stationsInOneKilometers, setStationsInOneKilometers] = useState<Array<IStation>>([]);
   const [currentOffcanvas, setCurrentOffcanvas] = useState<'station' | 'stop'>('station');
-  const [currentStation, setCurrentStation] = useState<IStation>();
+  const [currentStation, setCurrentStation] = useState({} as IStation);
+  const [busRoutes, setBusRoutes] = useState<Array<IBusRoute>>([]);
+
+  const mergeRoutesInStation = (routes: Array<IBusRoute>, station: IStation) => {
+    const stops = station?.Stops ? [...station.Stops] : [];
+    if (!routes.length || !stops.length) return station;
+
+    return {
+      ...station,
+      Stops: stops.map((stop) => {
+        const data = { DepartureStopNameZh: '', DestinationStopNameZh: '' };
+        routes.forEach((route) => {
+          if (route.RouteUID === stop.RouteUID) {
+            const { DepartureStopNameZh, DestinationStopNameZh } = route;
+            data.DepartureStopNameZh = DepartureStopNameZh;
+            data.DestinationStopNameZh = DestinationStopNameZh;
+          }
+        });
+        return { ...stop, ...data };
+      }),
+    };
+  };
 
   const handleStationItemClick = (station: IStation) => {
     const stops = [...station.Stops];
     stops.sort((a, b) => (b.RouteUID > a.RouteUID ? -1 : 1));
     setCurrentOffcanvas('stop');
-    setCurrentStation({ ...station, Stops: stops });
-    console.log(station);
+
+    const stationWithRoutes = mergeRoutesInStation(busRoutes, station);
+    setCurrentStation(stationWithRoutes);
+  };
+
+  const filterStationsInOneKilometers = (stations: Array<IStation>) => {
+    const { latitude, longitude } = position;
+    if (!latitude || !longitude) return [];
+    if (!stations.length) return [];
+
+    const oneKilometers = 1000;
+    return stations.reduce((prev, stationItem) => {
+      const station = { ...stationItem };
+      const { PositionLat, PositionLon } = station.StationPosition;
+      if (PositionLat && PositionLon) {
+        const distance = getDistance(
+          { latitude, longitude },
+          { latitude: PositionLat, longitude: PositionLon },
+        );
+
+        const inOneKilometers = distance <= oneKilometers;
+        if (inOneKilometers) {
+          station.distance = distance;
+          prev.push(station);
+        }
+      }
+
+      return prev;
+    }, [] as Array<IStation>).sort((a, b) => a.distance! - b.distance!);
   };
 
   useEffect(() => {
@@ -205,44 +254,21 @@ const NearStation: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const getStations = () => {
+    const getStations = async () => {
       if (!county.en) return;
-      getStationsTrigger({ city: county.en }).catch(() => {});
-    };
 
-    getStations();
-  }, [county]);
+      const [{ data: stations = [] }, { data: routes = [] }] = await Promise.all([
+        getStationsTrigger({ city: county.en }),
+        getRoutesTrigger(county.en),
+      ]);
 
-  useEffect(() => {
-    const filterStationsInOneKilometers = () => {
-      const { latitude, longitude } = position;
-      if (!latitude || !longitude) return;
-      if (!stations.length) return;
-
-      const oneKilometers = 1000;
-      const stationsInOneKilometersArr = stations.reduce((prev, stationItem) => {
-        const station = { ...stationItem };
-        const { PositionLat, PositionLon } = station.StationPosition;
-        if (PositionLat && PositionLon) {
-          const distance = getDistance(
-            { latitude, longitude },
-            { latitude: PositionLat, longitude: PositionLon },
-          );
-          const inOneKilometers = distance <= oneKilometers;
-          if (inOneKilometers) {
-            station.distance = distance;
-            prev.push(station);
-          }
-        }
-
-        return prev;
-      }, [] as Array<IStation>).sort((a, b) => a.distance! - b.distance!);
-
+      setBusRoutes(routes);
+      const stationsInOneKilometersArr = filterStationsInOneKilometers(stations);
       setStationsInOneKilometers(stationsInOneKilometersArr);
     };
 
-    filterStationsInOneKilometers();
-  }, [stations, position]);
+    getStations().catch(() => {});
+  }, [county]);
 
   return (
     <>
@@ -282,24 +308,23 @@ const NearStation: React.FC = () => {
             </BackToSearchBtn>
             <RoutesContainer>
               <StationNameContainer>
-                <h2 className="title">台中國家歌劇院</h2>
+                <h2 className="title">{currentStation.StationName.Zh_tw}</h2>
                 <SortTimeBtn>
                   <span className="material-icons-outlined list-icon">list</span>
                   <span className="content">依到站時間排序</span>
                 </SortTimeBtn>
               </StationNameContainer>
               <RouteList>
-                {currentStation?.Stops.map((stop) => (
+                {currentStation?.Stops?.map((stop) => (
                   <RouteItem key={`${stop.RouteUID}${stop.StopUID!}`}>
-                    <TimeBadge status="過站">過站</TimeBadge>
                     <RouteContent>
                       <p className="route-num">{stop.RouteName.Zh_tw}</p>
-                      <p className="route-directoin">往 中科管理局</p>
+                      <p className="route-direction">{stop.DepartureStopNameZh} - {stop.DestinationStopNameZh}</p>
                     </RouteContent>
                     <FavoriteBtn type="button">
                       <span className="material-icons-outlined favorite">favorite_border</span>
                       {/* <span className="material-icons-outlined favorite">favorite</span> */}
-                      <p className="city">台中</p>
+                      <p className="city">{county.zh}</p>
                     </FavoriteBtn>
                   </RouteItem>
                 ))}
@@ -316,30 +341,3 @@ const NearStation: React.FC = () => {
 };
 
 export default NearStation;
-
-// <div>
-//   <RouteItem>
-//     <TimeBadge status="進站中">即將進站</TimeBadge>
-//     <RouteContent>
-//       <p className="route-num">161</p>
-//       <p className="route-directoin">往 中科管理局</p>
-//     </RouteContent>
-//     <FavoriteBtn type="button">
-//       <span className="material-icons-outlined favorite">favorite_border</span>
-//       {/* <span className="material-icons-outlined favorite">favorite</span> */}
-//       <p className="city">台中</p>
-//     </FavoriteBtn>
-//   </RouteItem>
-//   <RouteItem>
-//     <TimeBadge status="10分">10: 10</TimeBadge>
-//     <RouteContent>
-//       <p className="route-num">161</p>
-//       <p className="route-directoin">往 中科管理局</p>
-//     </RouteContent>
-//     <FavoriteBtn type="button">
-//       <span className="material-icons-outlined favorite">favorite_border</span>
-//       {/* <span className="material-icons-outlined favorite">favorite</span> */}
-//       <p className="city">台中</p>
-//     </FavoriteBtn>
-//   </RouteItem>
-// </div>;

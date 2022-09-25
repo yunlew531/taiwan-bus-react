@@ -255,6 +255,8 @@ interface IStation {
   UpdateTime: string;
   VersionID: string;
   distance?: number;
+  DestinationStopNameZh?: string;
+  DepartureStopNameZh?: string;
 }
 
 interface IGetStationData {
