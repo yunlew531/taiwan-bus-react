@@ -188,7 +188,7 @@ interface IFavoRoute {
 interface IFavoStop {
   routeUid: string;
   routeName: string;
-  destinationStop: string;
+  departureStop: string;
   destinationStop: string;
   zhCity: string;
   city: string;

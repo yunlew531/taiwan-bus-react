@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
-import type { IBusRoute, IStation, ThemeProps } from 'react-app-env';
+import type {
+  IBusRoute, IFavoStop, IFavoStops, IStation, IStopInStation, ThemeProps,
+} from 'react-app-env';
 import Breadcrumb from 'components/Breadcrumb';
 import Search from 'components/Search';
 import Offcanvas from 'components/Offcanvas';
-import TimeBadge from 'components/TimeBadge';
 import useGeoLocation from 'hooks/useGeoLocation';
 import Leaflet from 'components/Leaflet';
 import { useLazyGetRoutesByCityQuery, useLazyGetStationsQuery } from 'services/bus';
 import { getDistance } from 'geolib';
+import { useAppDispatch, useAppSelector } from 'hooks';
+import { setFavoStops } from 'slices/busRoutesSlice';
 
 const MainContainer = styled.div`
   position: absolute;
@@ -106,27 +109,6 @@ const StationNameContainer = styled.div<ThemeProps>`
   }
 `;
 
-const SortTimeBtn = styled.button<ThemeProps>`
-  display: flex;
-  align-items: center;
-  border: none;
-  background-color: transparent;
-  transition: transform 0.1s linear;
-    &:hover {
-      transform: scale(1.03);
-    }
-    &:active {
-      transform: scale(0.98);
-    }
-  .list-icon {
-    font-size: ${({ theme: { fontSizes: { fs_3 } } }) => fs_3};
-    margin-right: 6px;
-  }
-  .content {
-    font-size: ${({ theme: { fontSizes: { fs_4 } } }) => fs_4};
-  }
-`;
-
 const RouteList = styled.ul`
   
 `;
@@ -173,7 +155,11 @@ const FavoriteBtn = styled.button<ThemeProps>`
     color: ${({ theme: { colors: { gray_600 } } }) => gray_600};
   }
   .favorite {
+    display: none;
     font-size: ${({ theme: { fontSizes: { fs_1 } } }) => fs_1};
+    &.show {
+      display: block;
+    }
   }
 `;
 
@@ -185,6 +171,7 @@ enum Bearing {
 }
 
 const NearStation: React.FC = () => {
+  const dispatch = useAppDispatch();
   const [searchValue, setSearchValue] = useState('');
   const { position, county, getGeoLocation } = useGeoLocation();
   const [getStationsTrigger] = useLazyGetStationsQuery();
@@ -193,6 +180,7 @@ const NearStation: React.FC = () => {
   const [currentOffcanvas, setCurrentOffcanvas] = useState<'station' | 'stop'>('station');
   const [currentStation, setCurrentStation] = useState({} as IStation);
   const [busRoutes, setBusRoutes] = useState<Array<IBusRoute>>([]);
+  const favoStops = useAppSelector((state) => state.busRoutes.favoStops);
 
   const mergeRoutesInStation = (routes: Array<IBusRoute>, station: IStation) => {
     const stops = station?.Stops ? [...station.Stops] : [];
@@ -214,13 +202,68 @@ const NearStation: React.FC = () => {
     };
   };
 
+  const mergeFavoInStops = (favoStopsData: IFavoStops, station: IStation) => ({
+    ...station,
+    Stops: station.Stops.map((stop) => {
+      let isFavorite = false;
+      const isStopInFavo = favoStopsData[stop.StopUID!];
+      const isSameRoute = favoStopsData[stop.StopUID!]?.routeUid === stop.RouteUID;
+      if (isStopInFavo && isSameRoute) { isFavorite = true; }
+
+      return {
+        ...stop,
+        isFavorite,
+      };
+    }),
+  });
+
   const handleStationItemClick = (station: IStation) => {
     const stops = [...station.Stops];
     stops.sort((a, b) => (b.RouteUID > a.RouteUID ? -1 : 1));
     setCurrentOffcanvas('stop');
 
     const stationWithRoutes = mergeRoutesInStation(busRoutes, station);
-    setCurrentStation(stationWithRoutes);
+    const stopsInStationWithFavorite = mergeFavoInStops(favoStops, stationWithRoutes);
+
+    setCurrentStation(stopsInStationWithFavorite);
+  };
+
+  const toggleStopFavo = (stop: IStopInStation) => {
+    const {
+      StopName, StopUID, RouteName, RouteUID, DepartureStopNameZh, DestinationStopNameZh,
+    } = stop;
+    const { PositionLat, PositionLon } = currentStation.StationPosition;
+
+    if (stop.isFavorite) {
+      const updatedStopFavo = {
+        ...favoStops,
+        [StopUID!]: null,
+      };
+      dispatch(setFavoStops(updatedStopFavo));
+      localStorage.setItem('favoStops', JSON.stringify(updatedStopFavo));
+    } else {
+      const favoData: IFavoStop = {
+        city: county.en,
+        zhCity: county.zh,
+        routeName: RouteName.Zh_tw,
+        routeUid: RouteUID,
+        destinationStop: DestinationStopNameZh!,
+        departureStop: DepartureStopNameZh!,
+        stopName: StopName!.Zh_tw,
+        stopUid: StopUID!,
+        position: {
+          PositionLat,
+          PositionLon,
+        },
+      };
+      const updatedStopFavo = {
+        ...favoStops,
+        [StopUID!]: favoData,
+      };
+
+      dispatch(setFavoStops(updatedStopFavo));
+      localStorage.setItem('favoStops', JSON.stringify(updatedStopFavo));
+    }
   };
 
   const filterStationsInOneKilometers = (stations: Array<IStation>) => {
@@ -270,6 +313,16 @@ const NearStation: React.FC = () => {
     getStations().catch(() => {});
   }, [county]);
 
+  useEffect(() => {
+    const updateStation = () => {
+      if (!currentStation.Stops?.length) return;
+      const stopsInStationWithFavorite = mergeFavoInStops(favoStops, currentStation);
+      setCurrentStation(stopsInStationWithFavorite);
+    };
+
+    updateStation();
+  }, [favoStops]);
+
   return (
     <>
       <Breadcrumb title="附近站牌" copy timeTable />
@@ -308,11 +361,7 @@ const NearStation: React.FC = () => {
             </BackToSearchBtn>
             <RoutesContainer>
               <StationNameContainer>
-                <h2 className="title">{currentStation.StationName.Zh_tw}</h2>
-                <SortTimeBtn>
-                  <span className="material-icons-outlined list-icon">list</span>
-                  <span className="content">依到站時間排序</span>
-                </SortTimeBtn>
+                <h2 className="title">{currentStation?.StationName?.Zh_tw}</h2>
               </StationNameContainer>
               <RouteList>
                 {currentStation?.Stops?.map((stop) => (
@@ -321,9 +370,15 @@ const NearStation: React.FC = () => {
                       <p className="route-num">{stop.RouteName.Zh_tw}</p>
                       <p className="route-direction">{stop.DepartureStopNameZh} - {stop.DestinationStopNameZh}</p>
                     </RouteContent>
-                    <FavoriteBtn type="button">
-                      <span className="material-icons-outlined favorite">favorite_border</span>
-                      {/* <span className="material-icons-outlined favorite">favorite</span> */}
+                    <FavoriteBtn
+                      type="button"
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        e.stopPropagation();
+                        toggleStopFavo(stop);
+                      }}
+                    >
+                      <span className={`material-icons-outlined favorite ${stop.isFavorite ? '' : 'show'}`}>favorite_border</span>
+                      <span className={`material-icons-outlined favorite ${stop.isFavorite ? 'show' : ''}`}>favorite</span>
                       <p className="city">{county.zh}</p>
                     </FavoriteBtn>
                   </RouteItem>

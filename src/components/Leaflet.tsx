@@ -140,7 +140,7 @@ const Leaflet: React.FC<LeafletProps> = ({
       if (shapeOfBusRoute?.length && mapInstanceRef.current) {
         routeShapeLine.current = L.polyline(shapeOfBusRoute).addTo(mapInstanceRef.current);
         if (isFocusPositionExist) {
-          mapInstanceRef.current.flyTo(defaultPosition as [number, number], 18);
+          mapInstanceRef.current.setView(defaultPosition as [number, number], 18);
         } else {
           mapInstanceRef.current.fitBounds(shapeOfBusRoute);
         }
@@ -280,7 +280,7 @@ const Leaflet: React.FC<LeafletProps> = ({
 
   useEffect(() => {
     if (isFocusPositionExist) {
-      mapInstanceRef.current!.flyTo(defaultPosition as [number, number], 15);
+      mapInstanceRef.current!.setView(defaultPosition as [number, number], 15);
     }
   }, [focusPosition]);
 
